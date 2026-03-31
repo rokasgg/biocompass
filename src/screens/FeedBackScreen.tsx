@@ -23,7 +23,7 @@ const FeedbackScreen = () => {
             <StatusBar barStyle="dark-content" />
 
             {/* --- Top App Bar --- */}
-            <Header title='Restorative Health' />
+            <Header title='Feedback' />
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 

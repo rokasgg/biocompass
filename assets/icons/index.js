@@ -25,6 +25,11 @@ import CalendarIcon from './calendar.svg';
 import SettingsIcon from './settings.svg';
 import GroupsIcon from './people.svg';
 import SunIcon from './sun.svg';
+import MailIcon from './email.svg';
+import SendIcon from './send.svg';
+import BackIcon from './backIcon.svg';
+import EmailIcon from './email.svg';
+import SparkleIcon from './sparkle.svg';
 
 export {
     SleepIcon,
@@ -52,5 +57,10 @@ export {
     CalendarIcon,
     SettingsIcon,
     GroupsIcon,
-    SunIcon
+    SunIcon,
+    MailIcon,
+    SendIcon,
+    BackIcon,
+    EmailIcon,
+    SparkleIcon
 };

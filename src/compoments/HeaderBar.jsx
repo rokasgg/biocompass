@@ -2,15 +2,9 @@ import { TouchableOpacity, Text, StyleSheet, Platform, View } from 'react-native
 import Bell from '../../assets/icons/bell.svg';
 import React from 'react';
 
-interface Props {
-    title: string;
-    onPress: () => void;
-    variant?: 'primary' | 'secondary';
-    icon?: React.ReactNode;
-}
 import { THEME } from '../theme';
 
-const HeaderBar = ({ title, onPress, variant = 'primary', icon }: Props) => (
+const HeaderBar = ({ title, onPress = () => { }, rightComponent = null }) => (
     <View style={styles.header}>
         <View style={styles.headerLeft}>
             {/* <Image
@@ -19,10 +13,14 @@ const HeaderBar = ({ title, onPress, variant = 'primary', icon }: Props) => (
             /> */}
             <Text style={styles.headerTitle}>{title}</Text>
         </View>
-        <TouchableOpacity style={styles.iconButton} onPress={onPress}>
+        {rightComponent ? (
+            rightComponent
+        ) : (
+            <TouchableOpacity style={styles.iconButton} onPress={onPress}>
+                <Bell width={24} height={24} fill={THEME.colors.onSurface} />
+            </TouchableOpacity>
+        )}
 
-            <Bell width={24} height={24} fill={THEME.colors.onSurface} />
-        </TouchableOpacity>
     </View>
 );
 
@@ -41,5 +39,10 @@ const styles = StyleSheet.create({
         color: THEME.colors.onSurface
     },
 });
+
+HeaderBar.defaultProps = {
+    onPress: () => { },
+    rightComponent: null,
+};
 
 export default HeaderBar;

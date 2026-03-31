@@ -18,6 +18,7 @@ import LeafIcon from '../../../assets/icons/leaf.svg';
 import { EyeIcon } from '../../../assets/icons';
 import { useStore } from '../../store/useStore';
 import HomeIcon from '../../../assets/icons/home.svg';
+import { useNavigation } from '@react-navigation/native';
 
 // import { useAuthStore } from '../../store/useAuthStore';
 
@@ -26,7 +27,7 @@ const LoginScreen = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    // const navigation = useNavigation();
+    const navigation = useNavigation();
     const login = useStore((s) => s.login);
 
 
@@ -45,6 +46,10 @@ const LoginScreen = () => {
     }
     // Pull the login function from your Zustand store
     // const login = useAuthStore((state) => state.login);
+
+    const navigateToForgtoPassword = () => {
+        navigation.navigate('ForgotPassword');
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -86,7 +91,7 @@ const LoginScreen = () => {
                         <View style={styles.inputGroup}>
                             <View style={styles.labelRow}>
                                 <Text style={styles.label}>Password</Text>
-                                <TouchableOpacity>
+                                <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
                                     <Text style={styles.forgotText}>Forgot Password?</Text>
                                 </TouchableOpacity>
                             </View>

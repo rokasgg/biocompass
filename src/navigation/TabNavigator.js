@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import React from "react";
 import HomeScreen from "../screens/HomeScreen";
-import VibeScreen from "../screens/VibeScreen";
+import RitualsScreen from "../screens/RitualsScreen";
 import FeedScreen from "../screens/FeedBackScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import HomeIcon from '../../assets/icons/home.svg';
@@ -28,7 +28,7 @@ export default function MainTabNavigator() {
                 const props = { width: iconSize, height: iconSize, fill: color };
                 let IconComp = null;
                 if (route.name === 'Home') IconComp = HomeIcon;
-                if (route.name === 'Vibe') IconComp = MedidatingIcon;
+                if (route.name === 'Rituals') IconComp = MedidatingIcon;
                 if (route.name === 'Feedback') IconComp = StatsIcon;
                 if (route.name === 'Settings') IconComp = ProfileIcon;
                 if (!IconComp) return null;
@@ -82,7 +82,7 @@ export default function MainTabNavigator() {
             },
         })}>
             <Tab.Screen name="Home" component={HomeScreen} />
-            <Tab.Screen name="Vibe" component={VibeScreen} />
+            <Tab.Screen name="Rituals" component={RitualsScreen} />
             <Tab.Screen name="Feedback" component={FeedScreen} />
             <Tab.Screen name="Settings" component={SettingsScreen} />
         </Tab.Navigator>

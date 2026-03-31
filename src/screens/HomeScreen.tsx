@@ -29,7 +29,7 @@ const HomeScreen = () => {
             <StatusBar barStyle="dark-content" />
 
             {/* --- Top App Bar --- */}
-            <HeaderBar title="Restorative Health" onPress={() => alert('Header pressed')} />
+            <HeaderBar title="BioCompass" onPress={() => alert('Header pressed')} />
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
 

@@ -27,6 +27,8 @@ const PersonalInfoScreen = ({ navigation }) => {
         weight: '64',
     });
 
+
+
     return (
         <SafeAreaView style={styles.container}>
             {/* --- Top App Bar --- */}
@@ -229,6 +231,8 @@ const styles = StyleSheet.create({
     },
     saveBtnText: { color: 'white', fontSize: 18, fontWeight: '800' },
     lastUpdated: { fontSize: 10, fontWeight: '700', color: THEME.colors.onSurfaceVariant, marginTop: 24, letterSpacing: 1 },
+    backButton: { padding: 8 },
+    backArrow: { fontSize: 24, color: THEME.colors.primary }
 });
 
 export default PersonalInfoScreen;

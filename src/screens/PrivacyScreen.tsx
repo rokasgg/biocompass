@@ -10,34 +10,25 @@ import {
 } from 'react-native';
 import { THEME } from '../theme';
 import {
-    SleepIcon,
-    NutritionIcon,
-    HeartIcon,
-    BellIcon,
-    FeetIcon,
-    PsychologyIcon,
-    ScaleIcon,
-    BrainIcon,
-    ProfileIcon,
-    BreatheInIcon,
-    HoldIcon,
-    BreatheOutIcon,
-    ClockIcon,
-    LeafIcon,
     EyeIcon,
     LockIcon,
     ShieldIcon,
-    FingerprintIcon,
     TrashIcon,
     AnalyticsIcon,
     OpenArrow
 } from '../../assets/icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 
-const PrivacyScreen = ({ navigation }) => {
+const PrivacyScreen = () => {
     const [healthSync, setHealthSync] = useState(true);
     const [researchData, setResearchData] = useState(false);
     const [leaderboard, setLeaderboard] = useState(true);
+    const navigation = useNavigation();
+
+    const onChangePassword = () => {
+        navigation.navigate('ChangePassword');
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -119,13 +110,14 @@ const PrivacyScreen = ({ navigation }) => {
                         title="Change Password"
                         subtitle="LAST CHANGED 3 MONTHS AGO"
                         Icon={LockIcon}
+                        onPress={onChangePassword}
                     />
 
-                    <SecurityButton
+                    {/* <SecurityButton
                         title="Biometric Authentication"
                         subtitle="FACEID / FINGERPRINT ENABLED"
                         Icon={FingerprintIcon}
-                    />
+                    /> */}
 
                     <TouchableOpacity style={styles.deleteButton}>
                         <TrashIcon width={16} height={16} fill={THEME.colors.error} />
@@ -154,8 +146,8 @@ const ToggleCard = ({ title, description, value, onValueChange }) => (
     </View>
 );
 
-const SecurityButton = ({ title, subtitle, Icon }) => (
-    <TouchableOpacity style={styles.actionCard}>
+const SecurityButton = ({ title, subtitle, Icon, onPress }) => (
+    <TouchableOpacity style={styles.actionCard} onPress={onPress}>
         <View style={styles.securityIconRow}>
             <View style={styles.securityIconCircle}>
                 <Icon width={20} height={20} fill={THEME.colors.primary} />

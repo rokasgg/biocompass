@@ -5,12 +5,12 @@ import {
     Text,
     ScrollView,
     TouchableOpacity,
-    SafeAreaView,
     Switch,
     Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
 
 
@@ -215,7 +215,9 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.15)',
     },
 
-    footerNote: { textAlign: 'center', marginTop: 40, fontSize: 12, color: THEME.colors.onSurfaceVariant, fontWeight: '600' }
+    footerNote: { textAlign: 'center', marginTop: 40, fontSize: 12, color: THEME.colors.onSurfaceVariant, fontWeight: '600' },
+    backButton: { padding: 8 },
+    backArrow: { fontSize: 24, color: THEME.colors.primary },
 });
 
 export default NotificationSettingsScreen;
