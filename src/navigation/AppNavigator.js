@@ -55,16 +55,14 @@ export default function AppNavigator() {
                         <Stack.Screen
                             name="BreathingSession"
                             component={BreathingSessionScreen}
-                            options={{
-                                animation: 'slide_from_right'
-                            }}
+
                         />
                         <Stack.Screen
                             name="BreathworkGallery"
                             component={BreathworkGalleryScreen}
                             options={{
                                 animation: 'slide_from_right',
-                                headerBackVisible: true,
+
                             }}
                         />
 

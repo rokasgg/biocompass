@@ -3,8 +3,6 @@ import {
     StyleSheet,
     View,
     Text,
-    Image,
-    ScrollView,
     TouchableOpacity,
     Animated,
     Easing,
@@ -14,8 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { THEME } from '../theme';
-import { HeartIcon, LeafIcon } from '../../assets/icons';
 import ModalCompleteScreen from '../compoments/ModalComplete';
+import ModalConfirmation from '../compoments/ModalConfirmation';
 
 const { width } = Dimensions.get('window');
 
@@ -36,46 +34,22 @@ const BreathingSessionScreen = () => {
     const bgAnimStarted = useRef(false);
     const [bgAnimValue, setBgAnimValue] = useState(0);
     const [modalShow, setModalShow] = useState(false);
+    const [isCompleted, setIsCompleted] = useState(false);
+    const lastAnimValue = useRef(1);
 
     useEffect(() => {
-        if (!isRunning) {
-            return;
-        }
+        // 1. PHASE LISTENER su krypties sekimu
+        const listenerId = breatheAnim.addListener(({ value }) => {
+            if (value > lastAnimValue.current + 0.001) {
+                setPhase('INHALE');
+            } else if (value < lastAnimValue.current - 0.001) {
+                setPhase('EXHALE');
+            }
+            lastAnimValue.current = value;
+        });
 
-        // 1. The Breathing Animation (Scale + Opacity)
-        const runBreathing = () => {
-            setPhase('INHALE');
-            Animated.timing(breatheAnim, {
-                toValue: 1.2,
-                duration: 4000,
-                easing: Easing.inOut(Easing.sin),
-                useNativeDriver: true,
-            }).start(() => {
-                Animated.delay(500).start(() => {
-                    setPhase('EXHALE');
-                    Animated.timing(breatheAnim, {
-                        toValue: 1,
-                        duration: 4000,
-                        easing: Easing.inOut(Easing.sin),
-                        useNativeDriver: true,
-                    }).start(() => {
-                        if (isRunning) runBreathing();
-                    });
-                });
-            });
-        };
-
-        // 2. Soft Pulse for floating cards
-        const pulseLoop = Animated.loop(
-            Animated.sequence([
-                Animated.timing(pulseAnim, { toValue: 1.05, duration: 1500, useNativeDriver: true }),
-                Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
-            ])
-        );
-
-        // 3. Smooth Background Animation (6 seconds with linear easing for ultra-smooth frames)
-        // Only start once at session beginning to prevent restart flicker
-        if (!bgAnimStarted.current) {
+        // 2. BACKGROUND ANIMATION
+        if (isRunning && !bgAnimStarted.current) {
             bgAnimStarted.current = true;
             Animated.timing(bgAnim, {
                 toValue: 1,
@@ -84,23 +58,78 @@ const BreathingSessionScreen = () => {
                 useNativeDriver: false,
             }).start();
 
-            // Listen to background animation for smooth color updates
             bgAnim.addListener(({ value }) => {
                 setBgAnimValue(value);
             });
         }
 
-        pulseLoop.start();
-        runBreathing();
+        // 3. BREATHING LOGIC
+        const runBreathing = () => {
+            if (!isRunning) return;
+
+            // 1. Iškart keičiame tekstą prieš pat animaciją
+            setPhase('INHALE');
+
+            Animated.timing(breatheAnim, {
+                toValue: 1.2,
+                duration: 4000,
+                easing: Easing.inOut(Easing.sin),
+                useNativeDriver: true,
+            }).start(({ finished }) => {
+                // Tikriname, ar animacija baigėsi natūraliai (nebuvo sustabdyta)
+                if (finished && isRunning) {
+
+                    // 2. "HOLD" fazė (jei nori, gali čia uždėti setPhase('HOLD'))
+                    Animated.delay(500).start(() => {
+                        if (!isRunning) return;
+
+                        // 3. Iškart keičiame į EXHALE ir pradedame trauktis
+                        setPhase('EXHALE');
+
+                        Animated.timing(breatheAnim, {
+                            toValue: 1,
+                            duration: 4000,
+                            easing: Easing.inOut(Easing.sin),
+                            useNativeDriver: true,
+                        }).start(({ finished: f }) => {
+                            if (f && isRunning) runBreathing();
+                        });
+                    });
+                }
+            });
+        };
+
+        if (isRunning) {
+            runBreathing();
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, { toValue: 1.05, duration: 1500, useNativeDriver: true }),
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
+                ])
+            ).start();
+        } else {
+            breatheAnim.stopAnimation();
+            pulseAnim.stopAnimation();
+        }
 
         return () => {
-            pulseLoop.stop();
-            breatheAnim.setValue(1);
-            pulseAnim.setValue(1);
-            bgAnim.setValue(0);
-            bgAnimStarted.current = false;
+            breatheAnim.removeListener(listenerId);
+            breatheAnim.stopAnimation();
+            pulseAnim.stopAnimation();
         };
     }, [isRunning]);
+
+    useEffect(() => {
+        if (progress >= 100) {
+            // 1. Sustabdom visas animacijas ir laikmačius
+            setIsRunning(false);
+            breatheAnim.stopAnimation();
+            pulseAnim.stopAnimation();
+
+            // 2. Parodom pabaigos modalą
+            setIsCompleted(true);
+        }
+    }, [progress]);
 
     useEffect(() => {
         if (!isRunning || progress >= 100) return;
@@ -130,6 +159,28 @@ const BreathingSessionScreen = () => {
         const b = Math.round(lightB - (lightB - darkB) * bgProgress);
         return `rgb(${r}, ${g}, ${b})`;
     };
+    const closeModal = () => {
+        setModalShow(false);
+        navigation.goBack();
+    }
+
+    const stopSession = () => {
+        setIsRunning(false);
+        setModalShow(true);
+    }
+
+    const keepGoing = () => {
+        setIsRunning(true);
+        setModalShow(false);
+    }
+
+    if (modalShow) {
+        return <ModalConfirmation onConfirm={closeModal} onCancel={keepGoing} />
+    }
+    if (isCompleted) {
+        return <ModalCompleteScreen />
+    }
+
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: getBgColor() }]}>
@@ -169,11 +220,9 @@ const BreathingSessionScreen = () => {
                     <Text style={styles.progressText}>{displaySeconds} / {durationSecs} sec</Text>
                 </View>
 
-                <TouchableOpacity style={styles.stopBtn} onPress={() => setModalShow(!modalShow)}>
+                <TouchableOpacity style={styles.stopBtn} onPress={stopSession}>
                     <Text style={styles.stopBtnText}>Stop Session</Text>
                 </TouchableOpacity>
-
-                {modalShow && <ModalCompleteScreen />}
             </View>
         </SafeAreaView>
     );
@@ -182,12 +231,6 @@ const BreathingSessionScreen = () => {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: THEME.colors.background },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, height: 64 },
-    headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    avatar: { width: 36, height: 36, borderRadius: 18 },
-    brand: { fontSize: 22, fontWeight: '800', color: THEME.colors.primary, fontFamily: 'Plus Jakarta Sans' },
-    scoreBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: THEME.colors.surfaceContainerLow, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-    scoreText: { fontWeight: '700', color: '#333' },
-
     scrollContent: { paddingBottom: 100 },
     sessionHeader: { alignItems: 'center', marginTop: 24, marginBottom: 40 },
     title: { fontSize: 32, fontWeight: '800', color: THEME.colors.secondary, fontFamily: 'Plus Jakarta Sans' },
@@ -199,46 +242,26 @@ const styles = StyleSheet.create({
     progressBarFill: { height: '100%', backgroundColor: 'white' },
     progressText: { fontSize: 12, color: 'white', marginTop: 4, textAlign: 'right' },
 
-    stopBtn: { marginTop: 14, marginHorizontal: 24, paddingVertical: 12, borderRadius: 28, backgroundColor: 'white', alignItems: 'center' },
+    stopBtn: { marginTop: 14, marginHorizontal: 24, paddingVertical: 12, borderRadius: 28, backgroundColor: 'white', alignItems: 'center', height: 60, justifyContent: 'center' },
     stopBtnText: { color: 'black', fontWeight: '800', letterSpacing: 0.5 },
 
     visualizerContainer: { height: 400, justifyContent: 'center', alignItems: 'center' },
-    darkOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'black', zIndex: 1 },
+
     bgGlow: { position: 'absolute', width: 400, height: 400, backgroundColor: THEME.colors.primary + '10', borderRadius: 200 },
     mainInterface: { width: 320, height: 320, justifyContent: 'center', alignItems: 'center' },
     outerRing: { position: 'absolute', width: '100%', height: '100%', borderRadius: 160, borderWidth: 2, borderColor: THEME.colors.primaryContainer, opacity: 0.3 },
+
     breatheCoreWrapper: { width: 240, height: 240, borderRadius: 120, ...THEME.shadows.editorial },
     breatheCore: { flex: 1, borderRadius: 120, justifyContent: 'center', alignItems: 'center' },
+
     phaseText: { color: 'white', fontSize: 32, fontWeight: '900', letterSpacing: 4, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 },
     timerText: { color: 'white', opacity: 0.9, fontSize: 12, fontWeight: '700', marginTop: 8, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 },
 
-    floatingCard: { position: 'absolute', backgroundColor: 'white', padding: 12, borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 12, ...THEME.shadows.editorial, borderWidth: 1, borderColor: '#eee' },
-    hrPos: { top: 0, right: -20 },
-    calmPos: { bottom: 20, left: -20 },
-    statIconCircle: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-    statLabel: { fontSize: 8, fontWeight: '800', color: THEME.colors.onSurfaceVariant },
-    statValue: { fontSize: 16, fontWeight: '800', color: THEME.colors.onSurface },
-    statUnit: { fontSize: 10, fontWeight: '400', opacity: 0.5 },
 
-    controlsSection: { alignItems: 'center', gap: 32, marginTop: 40 },
-    filterBar: { flexDirection: 'row', backgroundColor: THEME.colors.surfaceContainerLow, borderRadius: 30, padding: 4 },
-    filterBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 25 },
     activeFilter: { backgroundColor: THEME.colors.primary },
     activeFilterText: { color: 'white', fontWeight: '700' },
     filterText: { color: THEME.colors.onSurfaceVariant, fontWeight: '600' },
 
-    rewardBanner: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: THEME.colors.tertiaryContainer, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 16 },
-    rewardIconCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: THEME.colors.tertiary },
-    rewardTitle: { fontWeight: '800', color: THEME.colors.onTertiaryContainer },
-    rewardSub: { fontSize: 10, fontWeight: '600', color: THEME.colors.onSurfaceVariant },
-
-    bentoSection: { paddingHorizontal: 24, marginTop: 60, gap: 20 },
-    infoCard: { backgroundColor: THEME.colors.surfaceContainer, padding: 32, borderRadius: 24 },
-    infoTitle: { fontSize: 18, fontWeight: '800', color: THEME.colors.primary, marginBottom: 12 },
-    infoBody: { color: THEME.colors.onSurfaceVariant, lineHeight: 22 },
-    infoLink: { marginTop: 16, fontWeight: '800', color: THEME.colors.primary, textDecorationLine: 'underline' },
-    chartMini: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginTop: 24, height: 40 },
-    bar: { width: 8, backgroundColor: THEME.colors.surfaceContainerHighest, borderRadius: 4 },
 });
 
 export default BreathingSessionScreen;

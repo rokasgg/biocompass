@@ -19,11 +19,14 @@ import HeaderBar from '../compoments/HeaderBar';
 import MetricCard from '../compoments/MetricWidget';
 import { HeartIcon, BellIcon, FeetIcon } from '../../assets/icons';
 import VitalityPlumbob from '../compoments/VitalityPlumbob';
+import { useNavigation } from '@react-navigation/native';
 
 
 const { width } = Dimensions.get('window');
 
 const HomeScreen = () => {
+
+    const navigation = useNavigation();
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
@@ -84,7 +87,7 @@ const HomeScreen = () => {
                         <Text style={styles.inspirationBody}>
                             Your heart rate variability indicates a high readiness for mindful movement.
                         </Text>
-                        <TouchableOpacity style={styles.primaryButton}>
+                        <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('BreathworkGallery')}>
                             <Text style={styles.buttonText}>Start Session</Text>
                         </TouchableOpacity>
                     </View>

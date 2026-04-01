@@ -30,6 +30,7 @@ import SendIcon from './send.svg';
 import BackIcon from './backIcon.svg';
 import EmailIcon from './email.svg';
 import SparkleIcon from './sparkle.svg';
+import NotimeIcon from './notime.svg';
 
 export {
     SleepIcon,
@@ -62,5 +63,6 @@ export {
     SendIcon,
     BackIcon,
     EmailIcon,
-    SparkleIcon
+    SparkleIcon,
+    NotimeIcon
 };

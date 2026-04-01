@@ -64,7 +64,7 @@ const VitalityPlumbob = ({ score = 0, isLoading = false }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { height: 250, alignItems: 'center', justifyContent: 'center' }
+    container: { height: 300, alignItems: 'center', justifyContent: 'center' }
 });
 
 export default VitalityPlumbob;

@@ -1,25 +1,9 @@
 import React, { useState } from 'react';
-import {
-    StyleSheet,
-    View,
-    Text,
-    ScrollView,
-    TouchableOpacity,
-    Switch,
-    Platform,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '../theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-
-
-    SunIcon,
-    AnalyticsIcon,
-    GroupsIcon,
-    SettingsIcon,
-    LeafIcon
-} from '../../assets/icons';
+import { SunIcon, AnalyticsIcon, GroupsIcon, SettingsIcon, LeafIcon } from '../../assets/icons';
 
 const NotificationSettingsScreen = ({ navigation }) => {
     // State for toggles
@@ -44,7 +28,6 @@ const NotificationSettingsScreen = ({ navigation }) => {
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
                 {/* --- Editorial Header --- */}
                 <View style={styles.heroSection}>
                     <Text style={styles.overline}>PREFERENCES</Text>
