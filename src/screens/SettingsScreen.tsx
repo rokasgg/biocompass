@@ -24,23 +24,29 @@ import LockIcon from '../../assets/icons/lock.svg';
 import SignOut from '../../assets/icons/signOut.svg';
 import { useNavigation } from '@react-navigation/native';
 import { useStore } from '../store/useStore';
+import { supabase } from '../../backend/supabase'
 
 const SettingsScreen = () => {
     const navigation = useNavigation();
     const tabBarHeight = useBottomTabBarHeight();
     const logout = useStore((s) => s.logout);
+    const user = useStore(state => state.user);
+    const stats = useStore(s => s.stats);
+    const score = useStore(s => s.score);
+    const userCompletedReg = useStore(s => s.userCompletedReg);
+    const setUserCompletedReg = useStore(s => s.setUserCompletedReg);
     const logoutHandler = () => {
         // logout();
-
-
-        logout(); // optional: still clear persisted auth state
+        supabase.auth.signOut()
+        setUserCompletedReg(false);
+        logout();
     };
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
 
             {/* --- Top App Bar --- */}
-            <Header title="Settings" />
+
 
             <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: THEME.spacing.xl + tabBarHeight }]}>
 
@@ -55,7 +61,7 @@ const SettingsScreen = () => {
                             <Text style={{ fontSize: 12, color: THEME.colors.onPrimaryContainer }}>✎</Text>
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.userName}>Elena Richardson</Text>
+                    <Text style={styles.userName}>{user?.firstName} {user?.lastName}</Text>
                     <Text style={styles.membershipStatus}>Premium Wellness Member</Text>
                 </View>
 
@@ -68,7 +74,7 @@ const SettingsScreen = () => {
                             <Text style={styles.statusLabel}>IN PROGRESS</Text>
                         </View>
                         <View style={styles.progressData}>
-                            <Text style={styles.percentageText}>74%</Text>
+                            <Text style={styles.percentageText}>{score ?? null}</Text>
                             <Text style={styles.progressSubtext}>Weekly completion</Text>
                         </View>
                         <View style={styles.progressBarBg}>
@@ -81,7 +87,7 @@ const SettingsScreen = () => {
                         <View style={[styles.card, styles.squareCard]}>
                             <FlowerIcon width={28} height={28} fill={COLORS.secondary} style={{ marginBottom: 12 }} />
                             <View>
-                                <Text style={styles.statNumber}>12</Text>
+                                <Text style={styles.statNumber}>{stats?.totalSessions}</Text>
                                 <Text style={styles.statLabel}>Mindful Sessions</Text>
                             </View>
                         </View>

@@ -46,15 +46,7 @@ const RitualsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       {/* --- Top App Bar --- */}
-      <HeaderBar
-        title="Rituals"
-        rightComponent={
-          <View style={styles.tokenBadge}>
-            <SleepIcon width={14} height={14} fill={THEME.colors.primary} />
-            <Text style={styles.tokenText}>{score}</Text>
-          </View>
-        }
-      />
+
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
@@ -126,7 +118,7 @@ const RitualsScreen = () => {
             </View>
             <Text style={styles.cardTitle}>Daily Manifestation</Text>
             <Text style={styles.cardBody}>Align your intentions for the day ahead. Visualize success and document goals.</Text>
-            <TouchableOpacity style={styles.secondaryActionBtn}>
+            <TouchableOpacity style={styles.secondaryActionBtn} onPress={() => navigation.navigate('ManifestationSelection')}>
               <Text style={styles.secondaryActionText}>Set Intentions</Text>
               <OpenArrow width={18} fill={THEME.colors.primary} />
             </TouchableOpacity>
@@ -163,14 +155,7 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: THEME.colors.background },
-  header: {
-    height: 72,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    backgroundColor: THEME.colors.surfaceContainerLow
-  },
+
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerAvatar: { width: 40, height: 40, borderRadius: 20 },
   headerBrand: { fontSize: 24, fontWeight: '800', color: THEME.colors.primary, fontFamily: 'Plus Jakarta Sans' },

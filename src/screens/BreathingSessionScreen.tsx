@@ -151,6 +151,7 @@ const BreathingSessionScreen = () => {
 
     // Smooth background color transition using animated value
     const bgProgress = bgAnimValue;
+
     const getBgColor = () => {
         const lightR = 249, lightG = 250, lightB = 246;  // THEME.colors.background
         const darkR = 15, darkG = 15, darkB = 23;        // Very dark
@@ -159,6 +160,7 @@ const BreathingSessionScreen = () => {
         const b = Math.round(lightB - (lightB - darkB) * bgProgress);
         return `rgb(${r}, ${g}, ${b})`;
     };
+
     const closeModal = () => {
         setModalShow(false);
         navigation.goBack();
@@ -180,7 +182,6 @@ const BreathingSessionScreen = () => {
     if (isCompleted) {
         return <ModalCompleteScreen />
     }
-
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: getBgColor() }]}>

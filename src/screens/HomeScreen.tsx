@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     StyleSheet,
     View,
     Text,
-    Image,
     ScrollView,
     TouchableOpacity,
     StatusBar,
@@ -11,28 +10,34 @@ import {
     Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 // Importing your Global Design Tokens
 import { THEME } from '../theme';
-import { TXT } from '../constants/i18n';
-import HeaderBar from '../compoments/HeaderBar';
 import MetricCard from '../compoments/MetricWidget';
-import { HeartIcon, BellIcon, FeetIcon } from '../../assets/icons';
+
 import VitalityPlumbob from '../compoments/VitalityPlumbob';
 import { useNavigation } from '@react-navigation/native';
+import { useStore } from '../store/useStore';
+
 
 
 const { width } = Dimensions.get('window');
 
 const HomeScreen = () => {
 
+    const score = useStore((state) => state.score);
+    const user = useStore(state => state.user);
     const navigation = useNavigation();
+    const addScore = () => {
+        // Logic to add score would go here
+        // setScore(score + 20)
+        console.log('score:', score, user)
+    };
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
 
             {/* --- Top App Bar --- */}
-            <HeaderBar title="BioCompass" onPress={() => alert('Header pressed')} />
+            {/* <HeaderBar title="BioCompass" onPress={() => alert('Header pressed')} /> */}
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
 
@@ -40,16 +45,16 @@ const HomeScreen = () => {
                 <View style={styles.heroSection}>
                     <View style={styles.heroTextContainer}>
                         <Text style={styles.heroOverline}>VITALITY SCORE</Text>
-                        <Text style={styles.heroMainTitle}>Optimal</Text>
+                        <Text style={styles.heroMainTitle}>BioCompass</Text>
                     </View>
 
                     {/* Plumbob Visual Placeholder */}
                     <View style={styles.plumbobContainer}>
-                        <View style={styles.plumbobDiamond}>
+                        <TouchableOpacity style={styles.plumbobDiamond} onPress={addScore}>
                             {/* Note: In a real app, this would be an SVG or 3D model */}
-                            <VitalityPlumbob isLoading={false} score={80} />
-                        </View>
-                        <View style={styles.plumbobShadow} />
+                            <VitalityPlumbob isLoading={false} score={score} />
+                        </TouchableOpacity>
+                        {/* <View style={styles.plumbobShadow} /> */}
                     </View>
 
                     <View style={styles.heroFooter}>
@@ -145,7 +150,7 @@ const styles = StyleSheet.create({
         color: THEME.colors.secondary, letterSpacing: 1.5
     },
     heroMainTitle: {
-        fontSize: 48, fontWeight: '900',
+        fontSize: 38, fontWeight: '900',
         color: THEME.colors.onSurface, fontStyle: 'italic'
     },
     plumbobContainer: { alignItems: 'center', justifyContent: 'center' },

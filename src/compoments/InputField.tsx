@@ -9,6 +9,16 @@ import {
 } from 'react-native';
 import { THEME } from '../theme';
 
+type InpupProps = {
+    label: string,
+    icon: React.FC<{ width: number, height: number, fill: string }>,
+    secure: string,
+    rightIcon: React.FC<{ width: number, height: number, fill: string }>,
+    onRightIconPress: () => void,
+    error: string
+
+}
+
 const InputField = ({
     label,
     icon: Icon,
@@ -17,7 +27,7 @@ const InputField = ({
     onRightIconPress,
     error,
     ...props
-}) => {
+}: InpupProps) => {
     const [isFocused, setIsFocused] = useState(false);
     const [passwordVisible, setPasswordVisible] = useState(!secure);
 

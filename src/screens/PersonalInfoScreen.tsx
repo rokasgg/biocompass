@@ -15,19 +15,28 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '../theme';
 import { OpenArrow, CalendarIcon, } from '../../assets/icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useStore } from '../store/useStore';
 
 const width = Dimensions.get('window').width
 const PersonalInfoScreen = ({ navigation }) => {
+    const user = useStore(s => s.user ?? null);
+    const setUser = useStore(s => s.setUser);
+    console.log('email', user)
     const [form, setForm] = useState({
-        fullName: 'Elena Rostova',
-        email: 'elena.r@sagewellness.com',
-        phone: '+1 (555) 234-5678',
-        birthDate: 'March 12, 1994',
+        fullName: `${user?.firstName} ${user?.lastName}`,
+        email: user?.email,
+        phone: user?.phone,
+        birthDate: user?.birthDate || 'March 12, 1994',
         height: '172',
         weight: '64',
     });
 
-
+    const saveSettings = () => {
+        const userData = {
+            ...user, ...form
+        }
+        setUser(userData)
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -101,10 +110,7 @@ const PersonalInfoScreen = ({ navigation }) => {
                             </View>
                         </View>
 
-                        <View style={styles.row}>
-                            <MetricBox label="Height" value={form.height} unit="cm" />
-                            <MetricBox label="Weight" value={form.weight} unit="kg" />
-                        </View>
+
                     </View>
 
                     {/* --- Information Card --- */}
@@ -120,7 +126,7 @@ const PersonalInfoScreen = ({ navigation }) => {
 
                     {/* --- Save Button --- */}
                     <View style={styles.actionSection}>
-                        <TouchableOpacity activeOpacity={0.8}>
+                        <TouchableOpacity activeOpacity={0.8} onPress={saveSettings}>
                             <LinearGradient
                                 colors={[THEME.colors.primary, THEME.colors.primaryContainer]}
                                 style={styles.saveBtn}
@@ -193,7 +199,7 @@ const styles = StyleSheet.create({
     memberSince: { fontSize: 14, color: THEME.colors.onSurfaceVariant, marginTop: 4 },
 
     formSection: { gap: 24, marginBottom: 24 },
-    inputWrapper: { gap: 8 },
+    inputWrapper: { gap: 8, flexDirection: 'column' },
     label: { fontSize: 10, fontWeight: '800', color: THEME.colors.secondary, letterSpacing: 1.5, textTransform: 'uppercase', marginLeft: 4 },
     input: {
         backgroundColor: THEME.colors.surfaceContainerLow,

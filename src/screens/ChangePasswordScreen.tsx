@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '../theme';
 import { LockIcon, EyeIcon } from '../../assets/icons';
 import { useNavigation } from '@react-navigation/native';
+import PasswordField from '../compoments/PasswordField';
 
 type PasswordFieldProps = {
     label: string,
@@ -183,27 +184,6 @@ const ChangePasswordScreen = () => {
     );
 };
 
-// --- Password Input Component ---
-
-const PasswordField = ({ label, value, onChangeText, secureTextEntry, toggleVisible, isVisible }: PasswordFieldProps) => (
-    <View style={styles.inputGroup}>
-        <Text style={styles.label}>{label}</Text>
-        <View style={styles.inputWrapper}>
-            <TextInput
-                style={styles.input}
-                value={value}
-                onChangeText={onChangeText}
-                placeholder="••••••••"
-                placeholderTextColor={THEME.colors.outlineVariant}
-                secureTextEntry={secureTextEntry}
-                autoCapitalize="none"
-            />
-            <TouchableOpacity onPress={toggleVisible} style={styles.eyeBtn}>
-                <EyeIcon width={20} height={20} fill={isVisible ? THEME.colors.outline : THEME.colors.outlineVariant} />
-            </TouchableOpacity>
-        </View>
-    </View>
-);
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: THEME.colors.background },
@@ -239,18 +219,10 @@ const styles = StyleSheet.create({
     },
 
     form: { gap: 24 },
-    inputGroup: { gap: 8 },
+
     label: { fontSize: 14, fontWeight: '700', color: THEME.colors.onSurfaceVariant, marginLeft: 8 },
-    inputWrapper: { justifyContent: 'center' },
-    input: {
-        height: 56,
-        backgroundColor: THEME.colors.surfaceContainerLow,
-        borderRadius: 28,
-        paddingHorizontal: 24,
-        fontSize: 16,
-        color: THEME.colors.onSurface,
-    },
-    eyeBtn: { position: 'absolute', right: 20 },
+
+
 
     strengthRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, marginLeft: 16 },
     strengthBar: { width: 48, height: 4, borderRadius: 2 },

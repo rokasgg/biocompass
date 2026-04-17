@@ -9,6 +9,8 @@ import {
     Platform,
     ScrollView,
     Image,
+    Linking,
+    Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,6 +21,10 @@ import { EyeIcon } from '../../../assets/icons';
 import { useStore } from '../../store/useStore';
 import HomeIcon from '../../../assets/icons/home.svg';
 import { useNavigation } from '@react-navigation/native';
+import { supabase } from '../../../backend/supabase';
+import BioLoader from '../../compoments/BioLoader';
+import { mapProfileFromDB } from '../../utils/mapper';
+
 
 // import { useAuthStore } from '../../store/useAuthStore';
 
@@ -26,29 +32,70 @@ const LoginScreen = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
+
     const navigation = useNavigation();
+
+    // Zustand Actions
     const login = useStore((s) => s.login);
+    const syncFromDB = useStore(s => s.syncFromDB);
+    const setUserCompletedReg = useStore(s => s.setUserCompletedReg);
 
-
-    const signIn = () => {
-        login();
-    }
-
-    const signInWithGoogle = async () => {
-        setIsLoading(true);
-        try {
-            login();
-        } catch (e) { }
-        finally {
-            setIsLoading(false);
+    async function signInWithEmail() {
+        if (!email || !password) {
+            Alert.alert('Error', 'Please fill in all fields');
+            return;
         }
-    }
-    // Pull the login function from your Zustand store
-    // const login = useAuthStore((state) => state.login);
 
-    const navigateToForgtoPassword = () => {
-        navigation.navigate('ForgotPassword');
+        setLoading(true);
+        try {
+            // 1. Supabase Auth
+            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (authError) throw authError;
+
+            const supabaseUser = authData.user;
+
+            // 2. Pre-populate Zustand with Auth data (Email/ID)
+            // This is crucial so NewProfile screen can see the email
+            login(supabaseUser);
+
+            // 3. Check for Profile in DB
+            const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', supabaseUser.id)
+                .maybeSingle();
+
+            if (profileData && profileData.first_name) {
+                console.log('profileData:', profileData);
+                // USER IS FULLY REGISTERED
+                const formattedProfile = mapProfileFromDB(profileData);
+
+                syncFromDB({
+                    profile: formattedProfile,
+                    currentScore: profileData.score || 0,
+                    breathingStats: profileData.stats || { totalSessions: 0, byType: {}, history: [] }
+                });
+
+                // This will trigger AppNavigator to show MainTabs
+                setUserCompletedReg(true);
+            } else {
+                // USER IS NEW OR INCOMPLETE
+                console.log("Profile incomplete, redirecting via state...");
+
+                // This will trigger AppNavigator to show NewProfile
+                setUserCompletedReg(false);
+            }
+
+        } catch (error) {
+            Alert.alert('Login Failed', error.message);
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -114,14 +161,14 @@ const LoginScreen = () => {
                         </View>
 
                         {/* --- Sign In Button --- */}
-                        <TouchableOpacity activeOpacity={0.8} onPress={signIn}>
+                        <TouchableOpacity activeOpacity={0.8} onPress={signInWithEmail}>
                             <LinearGradient
                                 colors={[THEME.colors.primary, THEME.colors.primaryContainer]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
                                 style={styles.signInButton}
                             >
-                                {!isLoading ? <Text style={styles.signInButtonText}>Sign In</Text> : <HomeIcon />}
+                                {!loading ? <Text style={styles.signInButtonText}>Sign In</Text> : <BioLoader size={'small'} />}
                                 <Text style={{ color: 'white', marginLeft: 8 }}>→</Text>
                             </LinearGradient>
                         </TouchableOpacity>
@@ -135,11 +182,11 @@ const LoginScreen = () => {
 
                         {/* --- Social Buttons --- */}
                         <View style={styles.socialRow}>
-                            <TouchableOpacity style={styles.socialButton} onPress={signInWithGoogle}>
+                            <TouchableOpacity style={styles.socialButton} >
                                 <FontAwesome name="google" size={18} color="#000" />
                                 <Text style={styles.socialButtonText}>Google</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.socialButton}>
+                            <TouchableOpacity style={styles.socialButton} >
                                 <FontAwesome name="apple" size={18} color="#000" />
                                 <Text style={styles.socialButtonText}>Apple</Text>
                             </TouchableOpacity>
@@ -149,7 +196,7 @@ const LoginScreen = () => {
                     {/* --- Footer --- */}
                     <View style={styles.footer}>
                         <Text style={styles.footerText}>New to Sage?</Text>
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
                             <Text style={styles.createAccountText}>Create Account</Text>
                         </TouchableOpacity>
                     </View>

@@ -22,8 +22,6 @@ const FeedbackScreen = () => {
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
 
-            {/* --- Top App Bar --- */}
-            <Header title='Feedback' />
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 

@@ -1,5 +1,5 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import React from "react";
+import React, { useEffect } from "react";
 import HomeScreen from "../screens/HomeScreen";
 import RitualsScreen from "../screens/RitualsScreen";
 import FeedScreen from "../screens/FeedBackScreen";
@@ -10,12 +10,15 @@ import StatsIcon from '../../assets/icons/stats.svg';
 import ProfileIcon from '../../assets/icons/profile.svg';
 import { THEME } from '../theme';
 import { View, Text, Dimensions } from 'react-native';
+
 const Tab = createBottomTabNavigator();
 
 export default function MainTabNavigator() {
     const SCREEN_WIDTH = Dimensions.get('window').width;
 
     const TAB_WIDTH = Math.floor(SCREEN_WIDTH / 5);
+
+
     return (
         <Tab.Navigator screenOptions={({ route }) => ({
             headerShown: false,

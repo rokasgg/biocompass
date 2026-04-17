@@ -100,6 +100,9 @@ const BreathworkGalleryScreen = () => {
             {/* <HeaderBar /> */}
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Text style={styles.backArrow}>←</Text>
+                </TouchableOpacity>
                 {/* --- Hero Header --- */}
                 <View style={styles.heroHeader}>
                     <Text style={styles.overline}>DAILY RITUAL</Text>
@@ -177,21 +180,14 @@ const BreathworkGalleryScreen = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: THEME.colors.background },
-    header: {
-        height: 64,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        backgroundColor: 'rgba(249, 250, 246, 0.7)',
-    },
+
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     headerTitle: { fontSize: 18, fontWeight: '700', color: THEME.colors.onSurface, fontFamily: 'Plus Jakarta Sans' },
     iconBtn: { padding: 4 },
     profileCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: THEME.colors.surfaceContainer, justifyContent: 'center', alignItems: 'center' },
     profileIcon: { width: 20, height: 20, borderRadius: 10, backgroundColor: THEME.colors.primary },
 
-    scrollContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 100 },
+    scrollContent: { paddingHorizontal: 20, paddingBottom: 100 },
     heroHeader: { marginBottom: 40 },
     overline: { fontSize: 10, fontWeight: '800', color: THEME.colors.primary, letterSpacing: 2, marginBottom: 8 },
     title: { fontSize: 36, fontWeight: '800', color: THEME.colors.onSurface, fontFamily: 'Plus Jakarta Sans' },
@@ -239,7 +235,10 @@ const styles = StyleSheet.create({
     miniBeginBtn: { marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', marginRight: 20, marginBottom: 12 },
     miniBeginBtnText: { color: THEME.colors.primary, fontSize: 10, fontWeight: '700' },
 
-    quote: { textAlign: 'center', fontSize: 18, fontStyle: 'italic', color: '#CBD5E1', fontFamily: 'Plus Jakarta Sans', marginTop: 20 }
+    quote: { textAlign: 'center', fontSize: 18, fontStyle: 'italic', color: '#CBD5E1', fontFamily: 'Plus Jakarta Sans', marginTop: 20 },
+
+    backButton: { padding: 8 },
+    backArrow: { fontSize: 24, color: THEME.colors.primary },
 });
 
 export default BreathworkGalleryScreen;
