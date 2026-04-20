@@ -8,7 +8,7 @@ export interface UserSlice {
     setUser: (userData: UserProfile) => void,
     setUserId: (id: string) => void,
     updateScore: (newScore: number) => void,
-    syncFromDb: (dbData: any) => void,
+    syncFromDB: (dbData: any) => void,
 }
 
 export const createUserSlice: StateCreator<AppState, [], [], UserSlice> = (set) => ({
@@ -29,11 +29,20 @@ export const createUserSlice: StateCreator<AppState, [], [], UserSlice> = (set) 
         score: newScore
     }),
 
-    syncFromDb: (dbData) => set({
+    // syncFromDB: (dbData) => set({
+    //     user: dbData.profile,
+    //     stats: dbData.breathingStats,
+    //     score: dbData.currentScore,
+    //     isLoggedIn: true,
+    //     userCompletedReg: !!dbData.profile?.firstName
+    // }),
+    syncFromDB: (dbData) => set((state) => ({
         user: dbData.profile,
-        stats: dbData.breathingStats,
-        score: dbData.currentScore,
+        score: dbData.currentScore || 0,
+        // Jei dbData neturi stats (naujas vartotojas), paliekam tai, ką turim arba default
+        stats: dbData.breathingStats || state.stats || { totalSessions: 0, byType: {}, history: [] },
         isLoggedIn: true,
+        // Svarbiausia dalis: jei nėra vardo, vadinasi registracija nebaigta
         userCompletedReg: !!dbData.profile?.firstName
-    })
+    })),
 })

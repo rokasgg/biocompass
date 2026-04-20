@@ -38,8 +38,9 @@ const LoginScreen = () => {
 
     // Zustand Actions
     const login = useStore((s) => s.login);
+
     const syncFromDB = useStore(s => s.syncFromDB);
-    const setUserCompletedReg = useStore(s => s.setUserCompletedReg);
+
 
     async function signInWithEmail() {
         if (!email || !password) {
@@ -82,13 +83,13 @@ const LoginScreen = () => {
                 });
 
                 // This will trigger AppNavigator to show MainTabs
-                setUserCompletedReg(true);
+
             } else {
                 // USER IS NEW OR INCOMPLETE
                 console.log("Profile incomplete, redirecting via state...");
 
                 // This will trigger AppNavigator to show NewProfile
-                setUserCompletedReg(false);
+
             }
 
         } catch (error) {

@@ -29,7 +29,7 @@ export default function AppNavigator() {
     const isLoggedIn = useStore((s) => s.isLoggedIn);
     const login = useStore(s => s.login);
     const logout = useStore(s => s.logout);
-    const setUserCompletedReg = useStore(s => s.setUserCompletedReg);
+
     const userCompletedReg = useStore(s => s.userCompletedReg);
     // const isInitialLoading = useStore(s => s.isLoading);
     // const setIsInitialLoading = useStore(s => s.setIsInitialLoading);
@@ -48,7 +48,6 @@ export default function AppNavigator() {
 
             if (error) {
                 console.log("Profilis dar nesukurtas arba klaida:", error.message);
-                setUserCompletedReg(false);
                 // Jei profilio nėra, perduodame bent bazinę info iš auth
                 return {
                     profile: { email: supabaseUser.email, id: supabaseUser.id },
@@ -86,6 +85,7 @@ export default function AppNavigator() {
                 handleUserFlow(session.user);
             } else {
                 logout();
+                useStore.persist.clearStorage();
             }
         });
 
@@ -99,7 +99,7 @@ export default function AppNavigator() {
                 syncFromDB(fullData);
                 // Flip the switch based on actual DB data
                 console.log('User completed reg:', !!fullData.profile.firstName);
-                setUserCompletedReg(!!fullData.profile.firstName);
+
             }
             setIsInitialLoading(false);
         }

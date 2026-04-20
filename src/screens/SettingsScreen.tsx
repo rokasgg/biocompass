@@ -33,20 +33,15 @@ const SettingsScreen = () => {
     const user = useStore(state => state.user);
     const stats = useStore(s => s.stats);
     const score = useStore(s => s.score);
-    const userCompletedReg = useStore(s => s.userCompletedReg);
-    const setUserCompletedReg = useStore(s => s.setUserCompletedReg);
+
     const logoutHandler = () => {
         // logout();
         supabase.auth.signOut()
-        setUserCompletedReg(false);
         logout();
     };
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
-
-            {/* --- Top App Bar --- */}
-
 
             <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: THEME.spacing.xl + tabBarHeight }]}>
 

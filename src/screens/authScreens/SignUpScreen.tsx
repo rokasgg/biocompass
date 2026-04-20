@@ -51,12 +51,14 @@ const SignUpScreen = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const passwordStrength = getPasswordStrength(newPassword);
 
+    const syncFromDB = useStore((s) => s.syncFromDB);
+
     // Visibility states for 3 separate fields
     const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [showMismatchError, setShowMismatchError] = useState(false);
-    const setInitialInfo = useStore(s => s.setInitialInfo);
+
 
     const [loading, setLoading] = useState(false)
 
@@ -85,25 +87,36 @@ const SignUpScreen = () => {
 
             if (error) throw error;
 
-            // If 'data.user' exists, pass it to login to save ID and Email in Zustand
             if (data?.user) {
-                console.log('Registration successful, User ID:', data.user.email);
+                console.log('Registracija sėkminga:', data.user.id);
 
-                // This fills your Zustand store with the email and userId
-                // login({ id: '123', email: data.user.email, username: 'baba' });
-                setInitialInfo({ userId: data.user.id, email: data.user.email })
+                // 1. Paruošiame "tuščią" profilį, kurį tikisi syncFromDB
+                const initialData = {
+                    profile: {
+                        userId: data.user.id,
+                        email: data.user.email,
+                        // firstName ir kiti laukai čia neegzistuoja, 
+                        // todėl syncFromDB automatiškai nustatys userCompletedReg: false
+                    },
+                    currentScore: 0,
+                    breathingStats: { totalSessions: 0, byType: {}, history: [] }
+                };
 
-                // Explicitly set the userId if your store uses a separate action
-                useStore.getState().setUserId(data.user.id);
+                // 2. Sinchronizuojame store'ą
+                syncFromDB(initialData);
+
+                // 3. Prijungiame vartotoją (isLoggedIn = true)
+                login(data.user);
+
+                // Kadangi userCompletedReg bus false, AppNavigator tave 
+                // automatiškai nukreips į NewProfileCreationScreen.
 
             } else {
-                // This happens if email confirmation is turned ON in Supabase
-                Alert.alert("Check your email", "We sent you a confirmation link.");
+                Alert.alert("Patvirtinkite el. paštą", "Išsiuntėme nuorodą.");
             }
 
-        } catch (error) {
-            console.log('signUpWithEmail error:', error.message);
-            Alert.alert("Registration Error", error.message);
+        } catch (error: any) {
+            Alert.alert("Klaida", error.message);
         } finally {
             setLoading(false);
         }

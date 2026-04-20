@@ -31,8 +31,6 @@ export const useStore = create<AppState>()(
         {
             name: 'app-storage',
             storage: createJSONStorage(() => AsyncStorage),
-            // Optional: specify which parts of state to persist
-            // partialize: (state) => ({ score: state.score, stats: state.stats }), 
         }
     )
 )

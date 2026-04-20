@@ -26,8 +26,12 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (set) 
 
     logout: () => set({
         isLoggedIn: false,
+        userCompletedReg: false,
+        isLoading: false,
         user: null,
-        userCompletedReg: false
+        userId: null,
+        score: 0,
+        stats: { totalSessions: 0, byType: {}, history: [] }
     }),
 
     setIsInitialLoading: (value) => set({ isLoading: value }),

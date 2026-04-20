@@ -22,10 +22,10 @@ import PrimaryDatePicker from '../compoments/PrimaryDatePicker';
 const NewProfileCreationScreen = () => {
     const scrollViewRef = useRef<ScrollView>(null); // Reikalingas sklandžiam scroll'ui
     const [isLoading, setIsLoading] = useState(false);
-    const registeredEmail = useStore(s => s.email);
-    const userId = useStore(s => s.userId);
+    // const registeredEmail = useStore(s => s.email);
+    const user = useStore(s => s.user);
     const syncFromDB = useStore(s => s.syncFromDB);
-    const setUserCompletedReg = useStore(s => s.setUserCompletedReg);
+
 
     const [birthDate, setBirthDate] = useState<Date>(new Date());
     const [phone, setPhone] = useState('');
@@ -35,26 +35,28 @@ const NewProfileCreationScreen = () => {
     const updateProfileDB = async () => {
         setIsLoading(true);
         try {
+            console.log('userId:', user.userId)
             const { data: profileData, error } = await supabase.from('profiles').update([{
                 username: `${firstName.toLowerCase()}_${lastName.toLowerCase()}`,
                 first_name: firstName,
                 last_name: lastName,
-                email: registeredEmail,
+                email: 'registeredEmail',
                 subscribed: true,
                 phone: phone,
                 updated_at: new Date(),
                 birth_date: birthDate.toISOString(), // Pataisytas lauko pavadinimas į birth_date
-            }]).eq('id', userId).select();
+            }]).eq('id', user.userId).select();
 
             if (error) throw error;
 
             const formattedProfile = mapProfileFromDB(profileData[0]);
+            console.log('formattedProfile', formattedProfile)
             syncFromDB({
                 profile: formattedProfile,
                 currentScore: profileData[0].score || 0,
                 breathingStats: profileData[0].stats || { totalSessions: 0, byType: {}, history: [] }
             });
-            setUserCompletedReg(true);
+
         } catch (e) {
             console.log('Error integrating in DB:', e);
         } finally {
