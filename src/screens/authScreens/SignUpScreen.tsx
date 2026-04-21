@@ -2,6 +2,7 @@ import React, { use, useEffect, useState } from 'react';
 import {
     StyleSheet, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert
 } from 'react-native';
+import { BackIcon } from '../../../assets/icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
@@ -146,6 +147,11 @@ const SignUpScreen = () => {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
+                    <View style={styles.header}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                            <BackIcon width={24} fill={THEME.colors.primary} />
+                        </TouchableOpacity>
+                    </View>
                     {/* --- Welcome Text --- */}
                     <View style={styles.welcomeSection}>
                         <View style={styles.iconCircle}>
@@ -395,6 +401,10 @@ const styles = StyleSheet.create({
         marginLeft: 8,
         marginTop: 4,
     },
+    header: { position: 'absolute', height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
+    headerTitle: { fontSize: 18, fontWeight: '700', color: THEME.colors.primary },
+    content: { flex: 1, paddingHorizontal: 30, paddingTop: 40, alignItems: 'center' },
+    backButton: { padding: 8 },
 });
 
 export default SignUpScreen;

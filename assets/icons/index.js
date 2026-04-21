@@ -31,6 +31,8 @@ import BackIcon from './backIcon.svg';
 import EmailIcon from './email.svg';
 import SparkleIcon from './sparkle.svg';
 import NotimeIcon from './notime.svg';
+import FlowerIcon from './flower.svg';
+import LeafFilledIcon from './LEAFS.svg';
 
 export {
     SleepIcon,
@@ -64,5 +66,6 @@ export {
     BackIcon,
     EmailIcon,
     SparkleIcon,
-    NotimeIcon
+    NotimeIcon,
+    LeafFilledIcon
 };

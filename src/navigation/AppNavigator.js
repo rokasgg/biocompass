@@ -21,6 +21,7 @@ import { mapProfileFromDB } from "../utils/mapper";
 
 import { useNavigation } from '@react-navigation/native';
 import ManifestationSelectionScreen from "../screens/ManifestationSelectionScreen";
+import SplashScreen from "../screens/SplashScreen";
 
 
 const Stack = createNativeStackNavigator();
@@ -29,11 +30,11 @@ export default function AppNavigator() {
     const isLoggedIn = useStore((s) => s.isLoggedIn);
     const login = useStore(s => s.login);
     const logout = useStore(s => s.logout);
+    const isLoading = useStore(s => s.isLoading);
 
     const userCompletedReg = useStore(s => s.userCompletedReg);
-    // const isInitialLoading = useStore(s => s.isLoading);
-    // const setIsInitialLoading = useStore(s => s.setIsInitialLoading);
-    const [isInitialLoading, setIsInitialLoading] = useState(true);
+    const setIsInitialLoading = useStore(s => s.setIsInitialLoading);
+
 
 
     const syncFromDB = useStore((s) => s.syncFromDB);
@@ -47,7 +48,7 @@ export default function AppNavigator() {
                 .single();
 
             if (error) {
-                console.log("Profilis dar nesukurtas arba klaida:", error.message);
+
                 // Jei profilio nėra, perduodame bent bazinę info iš auth
                 return {
                     profile: { email: supabaseUser.email, id: supabaseUser.id },
@@ -55,10 +56,9 @@ export default function AppNavigator() {
                     breathingStats: { totalSessions: 0, byType: {}, history: [] }
                 };
             }
-            console.log("Pilni duomenys iš DB:", profile);
-            // navigation.navigate('NewProfile');
+
             const formattedProfile = mapProfileFromDB(profile);
-            console.log("Profilio duomenys iš DB:", formattedProfile);
+
             // Suformuojame objektą, kurio tikisi tavo Zustand syncFromDB
             // Nustatome, kad vartotojas baigė registraciją
             return {
@@ -72,44 +72,52 @@ export default function AppNavigator() {
         }
     };
 
-    useEffect(() => {
-        // 1. Check existing session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) handleUserFlow(session.user);
-            setIsInitialLoading(false);
-        });
+    async function handleUserFlow(supabaseUser) {
+        const delay = new Promise(resolve => setTimeout(resolve, 2000));
+        login(supabaseUser);
 
-        // 2. Listen for auth changes
-        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session) {
-                handleUserFlow(session.user);
-            } else {
-                logout();
-                useStore.persist.clearStorage();
-            }
-        });
-
-        async function handleUserFlow(supabaseUser) {
-            setIsInitialLoading(true);
-            login(supabaseUser); // Save email/ID to Zustand
-            console.log('User logged in, ID:', supabaseUser.id, 'Email:', supabaseUser.email);
-            const fullData = await loadFullUserData(supabaseUser);
-            console.log('Full user data loaded:', fullData);
-            if (fullData) {
-                syncFromDB(fullData);
-                // Flip the switch based on actual DB data
-                console.log('User completed reg:', !!fullData.profile.firstName);
-
-            }
-            setIsInitialLoading(false);
+        const fullData = await loadFullUserData(supabaseUser);
+        if (fullData) {
+            syncFromDB(fullData);
         }
 
+        await delay;
+    }
+
+
+    const initializeAuth = async () => {
+        setIsInitialLoading(true);
+
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            await handleUserFlow(session.user);
+        }
+        setIsInitialLoading(false);
+    }
+
+    useEffect(() => {
+
+        initializeAuth();
+
+        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                setIsInitialLoading(true); // Įjungiam, kai loginas įvyksta
+                await handleUserFlow(session.user);
+                setIsInitialLoading(false); // Nuimam, kai duomenys paruošti
+            } else if (event === 'SIGNED_OUT') {
+                logout();
+            }
+        });
+
         return () => authListener.subscription.unsubscribe();
+
     }, []);
 
-    if (isInitialLoading) {
-        return <BioLoader />; // Rodyk splash screen, kol tikrina sesiją
+    if (isLoading) {
+        return <SplashScreen />;
     }
+
     return (
         <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -179,7 +187,8 @@ export default function AppNavigator() {
                             <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
                             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
                         </Stack.Group>
-                    )}
+                    )
+                }
             </Stack.Navigator>
         </NavigationContainer>
     );

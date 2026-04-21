@@ -33,7 +33,7 @@ const LoginScreen = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-
+    const setIsInitialLoading = useStore(s => s.setIsInitialLoading);
     const navigation = useNavigation();
 
     // Zustand Actions
@@ -49,51 +49,18 @@ const LoginScreen = () => {
         }
 
         setLoading(true);
+        setIsInitialLoading(true)
         try {
             // 1. Supabase Auth
-            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            const { error: authError } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
 
             if (authError) throw authError;
-
-            const supabaseUser = authData.user;
-
-            // 2. Pre-populate Zustand with Auth data (Email/ID)
-            // This is crucial so NewProfile screen can see the email
-            login(supabaseUser);
-
-            // 3. Check for Profile in DB
-            const { data: profileData, error: profileError } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', supabaseUser.id)
-                .maybeSingle();
-
-            if (profileData && profileData.first_name) {
-                console.log('profileData:', profileData);
-                // USER IS FULLY REGISTERED
-                const formattedProfile = mapProfileFromDB(profileData);
-
-                syncFromDB({
-                    profile: formattedProfile,
-                    currentScore: profileData.score || 0,
-                    breathingStats: profileData.stats || { totalSessions: 0, byType: {}, history: [] }
-                });
-
-                // This will trigger AppNavigator to show MainTabs
-
-            } else {
-                // USER IS NEW OR INCOMPLETE
-                console.log("Profile incomplete, redirecting via state...");
-
-                // This will trigger AppNavigator to show NewProfile
-
-            }
-
         } catch (error) {
             Alert.alert('Login Failed', error.message);
+            setIsInitialLoading(false);
         } finally {
             setLoading(false);
         }
