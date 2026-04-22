@@ -1,12 +1,12 @@
 // 1. Iš Supabase (snake_case) -> Į tavo Zustand/Frontend (camelCase)
 export const mapProfileFromDB = (dbProfile: any) => {
   if (!dbProfile) return null;
-
+  console.log('Mapping DB profile to frontend format:', dbProfile);
   return {
     userId: dbProfile.id,
     username: dbProfile.username || '',
-    firstName: dbProfile.first_name || '', // DB: first_name -> Front: firstName
-    lastName: dbProfile.last_name || '',   // DB: last_name -> Front: lastName
+    firstName: dbProfile.first_name || '',
+    lastName: dbProfile.last_name || '',
     email: dbProfile.email || '',
     subscribed: dbProfile.subscribed || false,
     phone: dbProfile.phone || '',

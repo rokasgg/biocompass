@@ -40,18 +40,15 @@ export default function AppNavigator() {
     const syncFromDB = useStore((s) => s.syncFromDB);
     const loadFullUserData = async (supabaseUser) => {
         try {
-            // Traukiame papildomą info iš 'profiles' lentelės
             const { data: profile, error } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', supabaseUser.id)
                 .single();
 
-            if (error) {
-
-                // Jei profilio nėra, perduodame bent bazinę info iš auth
+            if (error || !profile?.email) {
                 return {
-                    profile: { email: supabaseUser.email, id: supabaseUser.id },
+                    profile: { email: supabaseUser.email, userId: supabaseUser.id },
                     currentScore: 0,
                     breathingStats: { totalSessions: 0, byType: {}, history: [] }
                 };
@@ -59,8 +56,6 @@ export default function AppNavigator() {
 
             const formattedProfile = mapProfileFromDB(profile);
 
-            // Suformuojame objektą, kurio tikisi tavo Zustand syncFromDB
-            // Nustatome, kad vartotojas baigė registraciją
             return {
                 profile: formattedProfile, // Čia bus tavo first_name, last_name ir t.t.
                 currentScore: profile.score || 0,
@@ -101,12 +96,28 @@ export default function AppNavigator() {
         initializeAuth();
 
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                setIsInitialLoading(true); // Įjungiam, kai loginas įvyksta
-                await handleUserFlow(session.user);
-                setIsInitialLoading(false); // Nuimam, kai duomenys paruošti
+            console.log('Auth event:', event);
+            // if (event === 'SIGNED_IN' && session) {
+            //     setIsInitialLoading(true);
+            //     console.log('User signed in:', session.user);
+            //     await handleUserFlow(session.user);
+            //     setIsInitialLoading(false);
+            // } else if (event === 'SIGNED_OUT') {
+            //     logout();
+            // }
+            if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+                // Jei tai INITIAL_SESSION, initializeAuth jau dirba savo darbą, 
+                // todėl čia galime net nieko nedaryti, kad nedubliuotume užklausų.
+                // Bet jei nori būti 100% saugus:
+                if (event === 'SIGNED_IN') {
+                    setIsInitialLoading(true);
+                    await handleUserFlow(session.user);
+                    setIsInitialLoading(false);
+                }
             } else if (event === 'SIGNED_OUT') {
                 logout();
+                // Papildomai galime išvalyti storage, jei norime gilaus valymo
+                // useStore.persist.clearStorage(); 
             }
         });
 

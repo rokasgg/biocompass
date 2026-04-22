@@ -51,6 +51,7 @@ const SignUpScreen = () => {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const passwordStrength = getPasswordStrength(newPassword);
+    const setIsInitialLoading = useStore(s => s.setIsInitialLoading);
 
     const syncFromDB = useStore((s) => s.syncFromDB);
 
@@ -74,13 +75,19 @@ const SignUpScreen = () => {
     }
 
     async function signUpWithEmail() {
+        if (!email || !newPassword || !confirmPassword) {
+            Alert.alert('Error', 'Please fill in all fields');
+            return;
+        }
         if (newPassword !== confirmPassword) {
             Alert.alert("Error", "Passwords do not match");
             return;
         }
 
         setLoading(true);
+        setIsInitialLoading(true)
         try {
+            // 1. Supabase Auth
             const { data, error } = await supabase.auth.signUp({
                 email: email,
                 password: newPassword,
@@ -88,42 +95,14 @@ const SignUpScreen = () => {
 
             if (error) throw error;
 
-            if (data?.user) {
-                console.log('Registracija sėkminga:', data.user.id);
-
-                // 1. Paruošiame "tuščią" profilį, kurį tikisi syncFromDB
-                const initialData = {
-                    profile: {
-                        userId: data.user.id,
-                        email: data.user.email,
-                        // firstName ir kiti laukai čia neegzistuoja, 
-                        // todėl syncFromDB automatiškai nustatys userCompletedReg: false
-                    },
-                    currentScore: 0,
-                    breathingStats: { totalSessions: 0, byType: {}, history: [] }
-                };
-
-                // 2. Sinchronizuojame store'ą
-                syncFromDB(initialData);
-
-                // 3. Prijungiame vartotoją (isLoggedIn = true)
-                login(data.user);
-
-                // Kadangi userCompletedReg bus false, AppNavigator tave 
-                // automatiškai nukreips į NewProfileCreationScreen.
-
-            } else {
-                Alert.alert("Patvirtinkite el. paštą", "Išsiuntėme nuorodą.");
-            }
-
         } catch (error: any) {
-            Alert.alert("Klaida", error.message);
+            Alert.alert('Login Failed', error.message);
+            setIsInitialLoading(false);
         } finally {
             setLoading(false);
         }
     }
-    // Pull the login function from your Zustand store
-    // const login = useAuthStore((state) => state.login);
+
 
     useEffect(() => {
         const timer = setTimeout(() => {

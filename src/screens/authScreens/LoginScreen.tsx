@@ -58,7 +58,7 @@ const LoginScreen = () => {
             });
 
             if (authError) throw authError;
-        } catch (error) {
+        } catch (error: any) {
             Alert.alert('Login Failed', error.message);
             setIsInitialLoading(false);
         } finally {

@@ -33,14 +33,15 @@ const NewProfileCreationScreen = () => {
     const [lastName, setLastName] = useState('');
 
     const updateProfileDB = async () => {
+        console.log('userId:', user)
         setIsLoading(true);
         try {
-            console.log('userId:', user.userId)
+            console.log('userId:', user)
             const { data: profileData, error } = await supabase.from('profiles').update([{
                 username: `${firstName.toLowerCase()}_${lastName.toLowerCase()}`,
                 first_name: firstName,
                 last_name: lastName,
-                email: 'registeredEmail',
+                email: user.email || '',
                 subscribed: true,
                 phone: phone,
                 updated_at: new Date(),
