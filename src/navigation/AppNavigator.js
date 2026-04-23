@@ -15,11 +15,10 @@ import BreathingSessionScreen from "../screens/BreathingSessionScreen";
 import BreathworkGalleryScreen from "../screens/BreathworkGalleryScreen";
 import SignUpScreen from "../screens/authScreens/SignUpScreen";
 import { supabase } from "../../backend/supabase";
-import BioLoader from "../compoments/BioLoader";
+
 import NewProfileCreationScreen from "../screens/NewProfileCreationScreen";
 import { mapProfileFromDB } from "../utils/mapper";
 
-import { useNavigation } from '@react-navigation/native';
 import ManifestationSelectionScreen from "../screens/ManifestationSelectionScreen";
 import SplashScreen from "../screens/SplashScreen";
 
@@ -97,18 +96,9 @@ export default function AppNavigator() {
 
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log('Auth event:', event);
-            // if (event === 'SIGNED_IN' && session) {
-            //     setIsInitialLoading(true);
-            //     console.log('User signed in:', session.user);
-            //     await handleUserFlow(session.user);
-            //     setIsInitialLoading(false);
-            // } else if (event === 'SIGNED_OUT') {
-            //     logout();
-            // }
+
             if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
-                // Jei tai INITIAL_SESSION, initializeAuth jau dirba savo darbą, 
-                // todėl čia galime net nieko nedaryti, kad nedubliuotume užklausų.
-                // Bet jei nori būti 100% saugus:
+
                 if (event === 'SIGNED_IN') {
                     setIsInitialLoading(true);
                     await handleUserFlow(session.user);

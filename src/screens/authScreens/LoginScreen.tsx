@@ -24,6 +24,7 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../../backend/supabase';
 import BioLoader from '../../compoments/BioLoader';
 import { mapProfileFromDB } from '../../utils/mapper';
+import { CustomButton } from '../../compoments/CustomButton';
 
 
 // import { useAuthStore } from '../../store/useAuthStore';
@@ -35,11 +36,6 @@ const LoginScreen = () => {
     const [loading, setLoading] = useState(false);
     const setIsInitialLoading = useStore(s => s.setIsInitialLoading);
     const navigation = useNavigation();
-
-    // Zustand Actions
-    const login = useStore((s) => s.login);
-
-    const syncFromDB = useStore(s => s.syncFromDB);
 
 
     async function signInWithEmail() {
@@ -129,17 +125,8 @@ const LoginScreen = () => {
                         </View>
 
                         {/* --- Sign In Button --- */}
-                        <TouchableOpacity activeOpacity={0.8} onPress={signInWithEmail}>
-                            <LinearGradient
-                                colors={[THEME.colors.primary, THEME.colors.primaryContainer]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                                style={styles.signInButton}
-                            >
-                                {!loading ? <Text style={styles.signInButtonText}>Sign In</Text> : <BioLoader size={'small'} />}
-                                <Text style={{ color: 'white', marginLeft: 8 }}>→</Text>
-                            </LinearGradient>
-                        </TouchableOpacity>
+
+                        <CustomButton title='Sign In' onPress={signInWithEmail} loading={loading} variant='login' />
 
                         {/* --- Divider --- */}
                         <View style={styles.dividerRow}>

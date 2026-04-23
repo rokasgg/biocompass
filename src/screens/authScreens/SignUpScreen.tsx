@@ -8,16 +8,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { THEME } from '../../theme';
 import LeafIcon from '../../../assets/icons/leaf.svg';
-import { EyeIcon } from '../../../assets/icons';
 import { useStore } from '../../store/useStore';
 import HomeIcon from '../../../assets/icons/home.svg';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../../backend/supabase';
 import PasswordField from '../../compoments/PasswordField'
 import PrimaryInput from '../../compoments/PrimaryInput';
+import { CustomButton } from '../../compoments/CustomButton';
 
-
-// import { useAuthStore } from '../../store/useAuthStore';
 
 type PasswordStrength = 'Weak' | 'Medium' | 'Strong';
 const getPasswordStrength = (password: string): PasswordStrength => {
@@ -43,20 +41,16 @@ const getStrengthColor = (strength: PasswordStrength) => {
 
 const SignUpScreen = () => {
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const navigation = useNavigation();
-    const login = useStore((s) => s.login);
-
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const passwordStrength = getPasswordStrength(newPassword);
+
+    const [isLoading, setIsLoading] = useState(false);
+    const navigation = useNavigation();
+    const login = useStore((s) => s.login);
     const setIsInitialLoading = useStore(s => s.setIsInitialLoading);
 
-    const syncFromDB = useStore((s) => s.syncFromDB);
-
     // Visibility states for 3 separate fields
-    const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [showMismatchError, setShowMismatchError] = useState(false);
@@ -87,7 +81,6 @@ const SignUpScreen = () => {
         setLoading(true);
         setIsInitialLoading(true)
         try {
-            // 1. Supabase Auth
             const { data, error } = await supabase.auth.signUp({
                 email: email,
                 password: newPassword,
@@ -189,17 +182,7 @@ const SignUpScreen = () => {
                             </View>
 
                             {/* --- Sign In Button --- */}
-                            <TouchableOpacity activeOpacity={0.8} onPress={signUpWithEmail}>
-                                <LinearGradient
-                                    colors={[THEME.colors.primary, THEME.colors.primaryContainer]}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                    style={styles.signInButton}
-                                >
-                                    {!isLoading ? <Text style={styles.signInButtonText}>Register</Text> : <HomeIcon />}
-                                    <Text style={{ color: 'white', marginLeft: 8 }}>→</Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
+                            <CustomButton title='Register' onPress={signUpWithEmail} variant='login' loading={loading} />
 
                             {/* --- Divider --- */}
                             <View style={styles.dividerRow}>

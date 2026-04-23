@@ -1,7 +1,6 @@
 // 1. Iš Supabase (snake_case) -> Į tavo Zustand/Frontend (camelCase)
 export const mapProfileFromDB = (dbProfile: any) => {
   if (!dbProfile) return null;
-  console.log('Mapping DB profile to frontend format:', dbProfile);
   return {
     userId: dbProfile.id,
     username: dbProfile.username || '',
@@ -19,7 +18,6 @@ export const mapProfileFromDB = (dbProfile: any) => {
 // Naudosi, kai darysi .update() arba .upsert()
 export const mapProfileToDB = (user: any) => {
   return {
-    // Čia rašome DB stulpelių pavadinimus kairėje
     username: user.username,
     first_name: user.firstName,
     last_name: user.lastName,

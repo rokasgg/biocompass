@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     StyleSheet,
     View,
@@ -25,6 +25,7 @@ import SignOut from '../../assets/icons/signOut.svg';
 import { useNavigation } from '@react-navigation/native';
 import { useStore } from '../store/useStore';
 import { supabase } from '../../backend/supabase'
+import BioLoader from '../compoments/BioLoader';
 
 const SettingsScreen = () => {
     const navigation = useNavigation();
@@ -33,11 +34,24 @@ const SettingsScreen = () => {
     const user = useStore(state => state.user);
     const stats = useStore(s => s.stats);
     const score = useStore(s => s.score);
+    const [loading, setLoading] = useState(false);
 
-    const logoutHandler = () => {
-        // logout();
+    const wait = new Promise((resolve, reject) => {
+        setTimeout(() => {
+            resolve('Wait finished');
+        })
+    })
+
+    const logoutHandler = async () => {
+        setLoading(true);
+        const delay = new Promise(resolve => setTimeout(resolve, 1500));
+
+        await delay;
+
         supabase.auth.signOut()
         logout();
+
+        setLoading(false);
     };
     return (
         <SafeAreaView style={styles.container}>
@@ -109,8 +123,15 @@ const SettingsScreen = () => {
                     </View>
 
                     <TouchableOpacity style={styles.signOutButton} onPress={logoutHandler}>
-                        <SignOut width={20} height={20} fill={THEME.colors.error} style={{ marginRight: 8 }} />
-                        <Text style={styles.signOutText}>Sign Out</Text>
+                        {!loading ?
+                            <>
+                                <SignOut width={20} height={20} fill={THEME.colors.error} style={{ marginRight: 8 }} />
+                                <Text style={styles.signOutText}>Sign Out</Text>
+                            </>
+                            :
+                            <BioLoader size={'small'} color='red' />
+                        }
+
                     </TouchableOpacity>
                 </View>
 
@@ -382,6 +403,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+
     signOutText: {
         color: THEME.colors.error,
         fontWeight: '700',

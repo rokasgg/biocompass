@@ -11,18 +11,18 @@ type BioLoaderProps = {
 
 const BioLoader = ({ message, color = THEME.colors.primary, size = "large" }: BioLoaderProps) => {
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ActivityIndicator size={size} color={color} />
       {message && <Text style={styles.message}>{message}</Text>}
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    // padding: 20,
+    // justifyContent: 'center',
+    // alignItems: 'center',
   },
   message: {
     marginTop: 12,
