@@ -6,10 +6,32 @@ import { THEME } from '../theme';
 import { useNavigation } from '@react-navigation/native';
 
 import InputField from '../compoments/InputField';
+import MainInput from '../compoments/MainInput';
+import { useState } from 'react';
+
+
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { passwordSchema, PasswordFormData } from "../utils/validators";
+import { CustomButton } from '../compoments/CustomButton';
 
 
 const ResetPasswordScreen = () => {
-    const navigation = useNavigation();
+    const [loading, isLoading] = useState(false);
+
+    const { control, handleSubmit, formState: { errors } } = useForm<PasswordFormData>({
+        resolver: zodResolver(passwordSchema),
+        defaultValues: {
+            password: '',
+            confirmPassword: '',
+        },
+        mode: 'onBlur'
+    });
+
+    const onSubmit = (data: PasswordFormData, errors: any) => {
+        console.log('data:', data);
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
@@ -17,67 +39,56 @@ const ResetPasswordScreen = () => {
                 <Text style={styles.subtitle}>Your new password must be different from your previously used passwords.</Text>
 
                 <View style={styles.form}>
-                    <InputField label="New Password" placeholder="••••••••" secure />
-                    <InputField label="Confirm New Password" placeholder="••••••••" secure />
+                    <Controller
+                        control={control}
+                        name="password"
 
-                    <View style={styles.chipRow}>
-                        <RequirementChip label="8+ Characters" met />
-                        <RequirementChip label="Upper & lowercase" />
-                        <RequirementChip label="One number" />
-                    </View>
+                        render={({ field: { onChange, value, onBlur } }) => (
+                            <MainInput label="New Password" placeHolder="••••••••" onChangeText={onChange} value={value} error={errors.password?.message}
+                                onBlur={onBlur}
+                            />
+                        )}
+                    />
+                    <Controller
+                        control={control}
+                        name="confirmPassword"
+                        render={({ field: { onChange, value, onBlur } }) => (
+                            <MainInput label="Confirm New Password" placeHolder="••••••••" onChangeText={onChange} value={value} error={errors.confirmPassword?.message} onBlur={onBlur}
+                            />
+                        )}
+                    />
+
+                </View>
+                <View style={{ width: '100%' }}>
+                    <CustomButton title='Reset Password' onPress={handleSubmit(onSubmit)} loading={loading} variant='primary' />
                 </View>
 
-                <TouchableOpacity onPress={() => navigation.navigate('Auth')}>
-                    <LinearGradient colors={[THEME.colors.primary, THEME.colors.primaryContainer]} style={styles.primaryBtn}>
-                        <Text style={styles.btnText}>Reset Password</Text>
-                    </LinearGradient>
-                </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
 };
 
-const RequirementChip = ({ label, met }) => (
-    <View style={[styles.chip, met && { backgroundColor: THEME.colors.primary + '10' }]}>
-        <Text style={[styles.chipText, met && { color: THEME.colors.primary }]}>{met ? '✓ ' : '○ '}{label}</Text>
-    </View>
-);
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: THEME.colors.background },
     header: { height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
     headerTitle: { fontSize: 18, fontWeight: '700', color: THEME.colors.primary },
-    content: { flex: 1, paddingHorizontal: 30, paddingTop: 40, alignItems: 'center' },
-
-    heroIconWrapper: { marginBottom: 32 },
-    heroCircle: { width: 96, height: 96, backgroundColor: THEME.colors.surfaceContainerLow, borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
-    badge: { position: 'absolute', top: -5, right: -5, width: 28, height: 28, backgroundColor: THEME.colors.primaryContainer, borderRadius: 14, borderMoving: 4, borderColor: 'white', justifyContent: 'center', alignItems: 'center' },
-    badgeText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
+    content: { paddingHorizontal: 30, paddingTop: 40, alignItems: 'center', width: '100%' },
+    form: { width: '100%', gap: 12, marginBottom: 40 },
 
     title: { fontSize: 28, fontWeight: '800', textAlign: 'center', color: THEME.colors.onSurface, marginBottom: 12 },
     subtitle: { fontSize: 16, textAlign: 'center', color: THEME.colors.onSurfaceVariant, lineHeight: 24, marginBottom: 40 },
 
-    inputGroup: { width: '100%', marginBottom: 32 },
+
     label: { fontSize: 14, fontWeight: '700', color: THEME.colors.primary, marginBottom: 8, paddingLeft: 4 },
-    inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.colors.surfaceContainerLow, borderRadius: 16 },
-    mailIcon: { marginLeft: 16 },
-    input: { flex: 1, height: 56, paddingHorizontal: 12, fontSize: 16, color: THEME.colors.onSurface },
+
 
     primaryBtn: { width: '100%', height: 56, borderRadius: 28, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, ...THEME.shadows.editorial },
     btnText: { color: 'white', fontSize: 18, fontWeight: '800' },
 
-    otpGrid: { flexDirection: 'row', gap: 10, marginBottom: 40 },
-    otpBox: { width: 45, height: 55, backgroundColor: THEME.colors.surfaceContainerLow, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    otpText: { fontSize: 22, fontWeight: 'bold', color: THEME.colors.primary },
-    hiddenInput: { position: 'absolute', opacity: 0, width: 0, height: 0 },
 
-    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 },
     chip: { backgroundColor: THEME.colors.surfaceContainer, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
     chipText: { fontSize: 12, fontWeight: '600', color: THEME.colors.secondary },
-
-    footerLink: { marginTop: 32, borderBottomWidth: 1, borderBottomColor: THEME.colors.primaryContainer },
-    footerText: { fontSize: 14, fontWeight: '700', color: THEME.colors.secondary },
-    btnContent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
 });
 
 export default ResetPasswordScreen;

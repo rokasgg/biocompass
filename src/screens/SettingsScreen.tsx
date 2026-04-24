@@ -44,7 +44,7 @@ const SettingsScreen = () => {
 
     const logoutHandler = async () => {
         setLoading(true);
-        const delay = new Promise(resolve => setTimeout(resolve, 1500));
+        const delay = new Promise(resolve => setTimeout(resolve, 1000));
 
         await delay;
 

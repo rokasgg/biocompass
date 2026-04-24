@@ -25,32 +25,40 @@ import { supabase } from '../../../backend/supabase';
 import BioLoader from '../../compoments/BioLoader';
 import { mapProfileFromDB } from '../../utils/mapper';
 import { CustomButton } from '../../compoments/CustomButton';
+import MainInput from '../../compoments/MainInput';
+
+
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { LoginFormData, loginSchema } from '../../utils/validators';
 
 
 // import { useAuthStore } from '../../store/useAuthStore';
 
 const LoginScreen = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
+
     const [loading, setLoading] = useState(false);
     const setIsInitialLoading = useStore(s => s.setIsInitialLoading);
     const navigation = useNavigation();
 
+    const { control, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
+        resolver: zodResolver(loginSchema),
+        defaultValues: {
+            password: '',
+            email: '',
+        },
+        mode: 'onBlur'
+    });
 
-    async function signInWithEmail() {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please fill in all fields');
-            return;
-        }
 
+    async function signInWithEmail({ email, password }: LoginFormData) {
         setLoading(true);
         setIsInitialLoading(true)
         try {
             // 1. Supabase Auth
             const { error: authError } = await supabase.auth.signInWithPassword({
-                email,
-                password,
+                email: email,
+                password: password,
             });
 
             if (authError) throw authError;
@@ -86,47 +94,39 @@ const LoginScreen = () => {
 
                     {/* --- Form Card --- */}
                     <View style={styles.formCard}>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Email Address</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="name@example.com"
-                                placeholderTextColor={THEME.colors.outlineVariant}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                value={email}
-                                onChangeText={setEmail}
-                            />
-                        </View>
+
+
+                        <Controller
+                            control={control}
+                            name="email"
+                            render={({ field: { onChange, value, onBlur } }) => (
+                                <MainInput label="Email Address" placeHolder="name@example.com" onChangeText={onChange} value={value} error={errors.email?.message} onBlur={onBlur}
+                                />
+                            )}
+                        />
+
+
 
                         <View style={styles.inputGroup}>
                             <View style={styles.labelRow}>
                                 <Text style={styles.label}>Password</Text>
-                                <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                                <TouchableOpacity onPress={() => navigation.navigate('ResetPassword')}>
                                     <Text style={styles.forgotText}>Forgot Password?</Text>
                                 </TouchableOpacity>
                             </View>
-                            <View style={styles.passwordWrapper}>
-                                <TextInput
-                                    style={[styles.input, { flex: 1 }]}
-                                    placeholder="••••••••"
-                                    placeholderTextColor={THEME.colors.outlineVariant}
-                                    secureTextEntry={!showPassword}
-                                    value={password}
-                                    onChangeText={setPassword}
-                                />
-                                <TouchableOpacity
-                                    onPress={() => setShowPassword(!showPassword)}
-                                    style={styles.eyeIcon}
-                                >
-                                    <EyeIcon width={18} height={18} fill={showPassword ? THEME.colors.onSurface : THEME.colors.outlineVariant} />
-                                </TouchableOpacity>
-                            </View>
+                            <Controller
+                                control={control}
+                                name="password"
+                                render={({ field: { onChange, value, onBlur } }) => (
+                                    <MainInput label="" placeHolder="••••••••" onChangeText={onChange} value={value} error={errors.password?.message} onBlur={onBlur} secureTextEntry
+                                    />
+                                )}
+                            />
                         </View>
 
                         {/* --- Sign In Button --- */}
 
-                        <CustomButton title='Sign In' onPress={signInWithEmail} loading={loading} variant='login' />
+                        <CustomButton title='Sign In' onPress={handleSubmit(signInWithEmail)} loading={loading} variant='login' />
 
                         {/* --- Divider --- */}
                         <View style={styles.dividerRow}>
@@ -217,12 +217,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 8,
     },
-    label: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: THEME.colors.primary,
-        marginLeft: 4,
-    },
+    label: { fontSize: 14, fontWeight: '500', color: THEME.colors.onSurfaceVariant, marginLeft: 4, marginBottom: 8 },
     input: {
         backgroundColor: THEME.colors.surfaceContainerLow,
         borderRadius: 12,
