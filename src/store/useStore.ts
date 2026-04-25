@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthSlice, createAuthSlice } from './slices/createAuthSlice';
 import { createUserSlice, UserSlice } from './slices/createUserSlice';
 import { createStatsSlice, StatsSlice } from './slices/createStatsSlice';
+import { createUISlice, UISlice } from './slices/createUISlice';
 
 export interface UserProfile {
     email: string;
@@ -19,7 +20,7 @@ export interface UserProfile {
     birthDate?: string | null;
 }
 
-export type AppState = AuthSlice & UserSlice & StatsSlice;
+export type AppState = AuthSlice & UserSlice & StatsSlice & UISlice
 
 export const useStore = create<AppState>()(
     persist(
@@ -27,10 +28,12 @@ export const useStore = create<AppState>()(
             ...createAuthSlice(...a),
             ...createUserSlice(...a),
             ...createStatsSlice(...a),
+            ...createUISlice(...a)
         }),
         {
             name: 'app-storage',
             storage: createJSONStorage(() => AsyncStorage),
+
         }
     )
 )

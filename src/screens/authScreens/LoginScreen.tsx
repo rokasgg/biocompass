@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     StyleSheet,
     View,
@@ -32,12 +32,12 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginFormData, loginSchema } from '../../utils/validators';
 
-
-// import { useAuthStore } from '../../store/useAuthStore';
-
 const LoginScreen = () => {
 
     const [loading, setLoading] = useState(false);
+    const errorMessage = useStore(s => s.errorMessage);
+    const setErrorMessage = useStore(s => s.setErrorMessage);
+    const clearError = useStore(s => s.clearError);
     const setIsInitialLoading = useStore(s => s.setIsInitialLoading);
     const navigation = useNavigation();
 
@@ -55,7 +55,7 @@ const LoginScreen = () => {
         setLoading(true);
         setIsInitialLoading(true)
         try {
-            // 1. Supabase Auth
+
             const { error: authError } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password,
@@ -63,12 +63,26 @@ const LoginScreen = () => {
 
             if (authError) throw authError;
         } catch (error: any) {
-            Alert.alert('Login Failed', error.message);
+
+            setErrorMessage(error.message);
             setIsInitialLoading(false);
         } finally {
             setLoading(false);
         }
     }
+
+    useEffect(() => {
+        if (!errorMessage) return;
+
+        const timer = setTimeout(() => {
+            clearError();
+        }, 5000);
+
+        return () => {
+            clearTimeout(timer);
+            clearError();
+        };
+    }, [errorMessage]);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -80,9 +94,6 @@ const LoginScreen = () => {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* --- Header / Brand --- */}
-
-
                     {/* --- Welcome Text --- */}
                     <View style={styles.welcomeSection}>
                         <View style={styles.iconCircle}>
@@ -91,6 +102,13 @@ const LoginScreen = () => {
                         <Text style={styles.title}>Welcome Back</Text>
                         <Text style={styles.subtitle}>Continue your journey to mindful living.</Text>
                     </View>
+
+                    {/* --- Error Display Card --- */}
+                    {errorMessage &&
+
+                        <View style={styles.errorSection}>
+                            <Text style={styles.errorTitle}>{errorMessage}</ Text>
+                        </View>}
 
                     {/* --- Form Card --- */}
                     <View style={styles.formCard}>
@@ -162,6 +180,19 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
+    errorSection: {
+        backgroundColor: THEME.colors.errorContainer,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 24,
+        alignItems: 'center',
+        borderColor: THEME.colors.error,
+        borderWidth: 1,
+    },
+    errorTitle: {
+        fontWeight: '600',
+        fontSize: 18,
+    },
     container: {
         flex: 1,
         backgroundColor: THEME.colors.surfaceContainerLow,
