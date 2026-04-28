@@ -15,6 +15,10 @@ import { supabase } from '../../../backend/supabase';
 import PasswordField from '../../compoments/PasswordField'
 import PrimaryInput from '../../compoments/PrimaryInput';
 import { CustomButton } from '../../compoments/CustomButton';
+import MainInput from '../../compoments/MainInput';
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { SignUpFormData, signUpSchema } from '../../utils/validators';
 
 
 type PasswordStrength = 'Weak' | 'Medium' | 'Strong';
@@ -40,23 +44,25 @@ const getStrengthColor = (strength: PasswordStrength) => {
 };
 
 const SignUpScreen = () => {
-    const [email, setEmail] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const passwordStrength = getPasswordStrength(newPassword);
+
 
     const [isLoading, setIsLoading] = useState(false);
     const navigation = useNavigation();
     const login = useStore((s) => s.login);
     const setIsInitialLoading = useStore(s => s.setIsInitialLoading);
 
-    // Visibility states for 3 separate fields
-    const [showNew, setShowNew] = useState(false);
-    const [showConfirm, setShowConfirm] = useState(false);
-    const [showMismatchError, setShowMismatchError] = useState(false);
-
 
     const [loading, setLoading] = useState(false)
+
+    const { control, handleSubmit, formState: { errors } } = useForm<SignUpFormData>({
+        resolver: zodResolver(signUpSchema),
+        defaultValues: {
+            password: '',
+            email: '',
+            confirmPassword: '',
+        },
+        mode: 'onBlur'
+    });
 
     const signInWithGoogle = async () => {
         setIsLoading(true);
@@ -68,22 +74,15 @@ const SignUpScreen = () => {
         }
     }
 
-    async function signUpWithEmail() {
-        if (!email || !newPassword || !confirmPassword) {
-            Alert.alert('Error', 'Please fill in all fields');
-            return;
-        }
-        if (newPassword !== confirmPassword) {
-            Alert.alert("Error", "Passwords do not match");
-            return;
-        }
+    async function signUpWithEmail({ email, password }: SignUpFormData) {
+
 
         setLoading(true);
         setIsInitialLoading(true)
         try {
             const { data, error } = await supabase.auth.signUp({
                 email: email,
-                password: newPassword,
+                password: password,
             });
 
             if (error) throw error;
@@ -97,17 +96,6 @@ const SignUpScreen = () => {
     }
 
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (newPassword && confirmPassword && newPassword !== confirmPassword) {
-                setShowMismatchError(true);
-            } else {
-                setShowMismatchError(false);
-            }
-        }, 500); // 500ms delay
-
-        return () => clearTimeout(timer);
-    }, [newPassword, confirmPassword]);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -136,53 +124,37 @@ const SignUpScreen = () => {
                     {/* --- Form Card --- */}
                     <View style={styles.formCard}>
                         <View style={styles.inputGroup}>
-                            <PrimaryInput
-                                label='Email Address'
-                                placeHolder='email@address.com'
-                                onChangeText={e => setEmail(e)}
-                                value={email}
+                            <Controller
+                                control={control}
+                                name="email"
+                                render={({ field: { onChange, value, onBlur } }) => (
+                                    <MainInput label="Email Address" placeHolder="name@example.com" onChangeText={onChange} value={value} error={errors.email?.message} onBlur={onBlur}
+                                    />
+                                )}
+                            />
+                            <Controller
+                                control={control}
+                                name="password"
+                                render={({ field: { onChange, value, onBlur } }) => (
+                                    <MainInput label="Password" placeHolder="••••••••" onChangeText={onChange} value={value} error={errors.password?.message} onBlur={onBlur} secureTextEntry
+                                    />
+                                )}
+                            />
+
+                            <Controller
+                                control={control}
+                                name="confirmPassword"
+                                render={({ field: { onChange, value, onBlur } }) => (
+                                    <MainInput label="Confirm New Password" placeHolder="••••••••" onChangeText={onChange} value={value} error={errors.confirmPassword?.message} onBlur={onBlur} secureTextEntry
+                                    />
+                                )}
                             />
                         </View>
 
                         <View style={styles.form}>
 
-                            {/* Current Password */}
-
-                            {/* New Password + Strength Meter */}
-                            <View>
-                                <PasswordField
-                                    label="New Password"
-                                    value={newPassword}
-                                    onChangeText={setNewPassword}
-                                    secureTextEntry={!showNew}
-                                    toggleVisible={() => setShowNew(!showNew)}
-                                    isVisible={showNew}
-                                />
-                                <View style={styles.strengthRow}>
-                                    <View style={[styles.strengthBar, { backgroundColor: passwordStrength === 'Weak' ? '#D00000' : passwordStrength === 'Medium' ? '#FFB000' : THEME.colors.primary }]} />
-                                    <View style={[styles.strengthBar, { backgroundColor: passwordStrength === 'Strong' || passwordStrength === 'Medium' ? (passwordStrength === 'Medium' ? '#FFB000' : THEME.colors.primary) : '#E5E5E5' }]} />
-                                    <View style={[styles.strengthBar, { backgroundColor: passwordStrength === 'Strong' ? THEME.colors.primary : '#E5E5E5' }]} />
-                                    <Text style={[styles.strengthLabel, { color: getStrengthColor(passwordStrength) }]}>{passwordStrength.toUpperCase()}</Text>
-                                </View>
-                            </View>
-
-                            {/* Confirm Password */}
-                            <View>
-                                <PasswordField
-                                    label="Confirm New Password"
-                                    value={confirmPassword}
-                                    onChangeText={setConfirmPassword}
-                                    secureTextEntry={!showConfirm}
-                                    toggleVisible={() => setShowConfirm(!showConfirm)}
-                                    isVisible={showConfirm}
-                                />
-                                {showMismatchError && (
-                                    <Text style={styles.errorMessage}>Passwords do not match</Text>
-                                )}
-                            </View>
-
                             {/* --- Sign In Button --- */}
-                            <CustomButton title='Register' onPress={signUpWithEmail} variant='login' loading={loading} />
+                            <CustomButton title='Register' onPress={handleSubmit(signUpWithEmail)} variant='login' loading={loading} />
 
                             {/* --- Divider --- */}
                             <View style={styles.dividerRow}>
@@ -353,7 +325,7 @@ const styles = StyleSheet.create({
         marginLeft: 4,
     },
     form: { gap: 24 },
-    strengthRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, marginLeft: 16 },
+    strengthRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, marginLeft: 16, marginBottom: 8 },
     strengthBar: { width: 48, height: 4, borderRadius: 2 },
     strengthLabel: { fontSize: 10, fontWeight: '800', color: THEME.colors.primary, letterSpacing: 1, marginLeft: 4 },
     errorMessage: {

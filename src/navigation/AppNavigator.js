@@ -184,7 +184,7 @@ export default function AppNavigator() {
                         <Stack.Group name='Auth'>
                             <Stack.Screen name="Login" component={LoginScreen} />
                             <Stack.Screen name="SignUp" component={SignUpScreen} />
-                            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+                            <Stack.Screen name="ForgotPassword" component={NewProfileCreationScreen} />
                             <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
                             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
                         </Stack.Group>

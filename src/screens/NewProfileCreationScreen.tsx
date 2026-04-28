@@ -19,10 +19,15 @@ import BioLoader from '../compoments/BioLoader';
 import { mapProfileFromDB } from '../utils/mapper';
 import PrimaryDatePicker from '../compoments/PrimaryDatePicker';
 
+import MainInput from '../compoments/MainInput';
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ProfileFormData, profileSchema } from '../utils/validators';
+
 const NewProfileCreationScreen = () => {
     const scrollViewRef = useRef<ScrollView>(null); // Reikalingas sklandžiam scroll'ui
     const [isLoading, setIsLoading] = useState(false);
-    // const registeredEmail = useStore(s => s.email);
+
     const user = useStore(s => s.user);
     const syncFromDB = useStore(s => s.syncFromDB);
 
@@ -32,7 +37,18 @@ const NewProfileCreationScreen = () => {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
 
-    const updateProfileDB = async () => {
+    const { control, handleSubmit, formState: { errors } } = useForm<ProfileFormData>({
+        resolver: zodResolver(profileSchema),
+        defaultValues: {
+            firstName: '',
+            lastName: '',
+            phone: '',
+            birthDate: new Date(),
+        },
+        mode: 'onBlur'
+    });
+
+    const updateProfileDB = async ({ firstName, lastName, phone, }: ProfileFormData) => {
         console.log('userId:', user)
         setIsLoading(true);
         try {
@@ -98,40 +114,56 @@ const NewProfileCreationScreen = () => {
 
                     <View style={styles.formCard}>
                         <View style={styles.form}>
-                            <PrimaryInput
-                                label='First Name'
-                                placeHolder='First name'
-                                onChangeText={setFirstName}
-                                value={firstName}
+
+                            <Controller
+                                control={control}
+                                name="firstName"
+                                render={({ field: { onChange, value, onBlur } }) => (
+                                    <MainInput label="First Name" placeHolder="First name" onChangeText={onChange} value={value} error={errors.firstName?.message} onBlur={onBlur}
+                                    />
+                                )}
+                            />
+                            <Controller
+                                control={control}
+                                name="lastName"
+                                render={({ field: { onChange, value, onBlur } }) => (
+                                    <MainInput label="Last Name" placeHolder="Last name" onChangeText={onChange} value={value} error={errors.lastName?.message} onBlur={onBlur}
+                                    />
+                                )}
                             />
 
-                            <PrimaryInput
-                                label='Last Name'
-                                placeHolder='Last name'
-                                onChangeText={setLastName}
-                                value={lastName}
+                            <Controller
+                                control={control}
+                                name="phone"
+                                render={({ field: { onChange, value, onBlur } }) => (
+                                    <MainInput label="Phone" placeHolder="+1 123 231 1234" onChangeText={onChange} value={value} error={errors.phone?.message} onBlur={onBlur}
+                                    />
+                                )}
                             />
 
-                            <PrimaryInput
-                                label='Phone'
-                                placeHolder='+1 123 231 1234'
-                                onChangeText={setPhone}
-                                value={phone}
-                                numersOnly
+                            <Controller
+                                control={control}
+                                name="birthDate"
+                                render={({ field: { onChange, value } }) => (
+                                    <PrimaryDatePicker
+                                        label="Birth Date"
+                                        // Jei value yra stringas (iš DB ar pan.), paverčiam į Date objektą
+                                        value={value ? new Date(value) : new Date()}
+                                        onChange={(selectedDate) => {
+                                            // ČIA SVARBIAUSIA DALIS: 
+                                            // Kai pasirenki datą, turi pranešti React Hook Form
+                                            onChange(selectedDate);
+                                        }}
+                                        error={errors.birthDate?.message}
+                                    />
+                                )}
                             />
 
-                            <PrimaryDatePicker
-                                label='Birth Date'
-                                placeHolder='YYYY-MM-DD'
-                                onChange={(date: Date) => setBirthDate(date)}
-                                value={birthDate}
-                                // Perduodame funkciją, kad ekranas suprastų, jog reikia pasislinkti
-                                onOpen={handleDatePickerPress}
-                            />
+
 
                             <TouchableOpacity
                                 activeOpacity={0.8}
-                                onPress={updateProfileDB}
+                                onPress={handleSubmit(updateProfileDB)}
                                 disabled={isLoading}
                             >
                                 <LinearGradient
@@ -302,7 +334,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         marginLeft: 4,
     },
-    form: { gap: 24 },
+    form: { gap: 4 },
     strengthRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, marginLeft: 16 },
     strengthBar: { width: 48, height: 4, borderRadius: 2 },
     strengthLabel: { fontSize: 10, fontWeight: '800', color: THEME.colors.primary, letterSpacing: 1, marginLeft: 4 },

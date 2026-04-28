@@ -17,9 +17,11 @@ type DatePickerProps = {
     value: Date;
     onChange: (date: Date) => void;
     placeHolder?: string;
+    error?: string;
 };
 
-const PrimaryDatePicker = ({ label, value, onChange, placeHolder }: DatePickerProps) => {
+const PrimaryDatePicker = ({ label, value, onChange, placeHolder, error }: DatePickerProps) => {
+    console.log('PrimaryDatePicker render, value:', error);
     const [show, setShow] = useState(false);
     const [tempDate, setTempDate] = useState(value || new Date());
 
@@ -141,6 +143,7 @@ const PrimaryDatePicker = ({ label, value, onChange, placeHolder }: DatePickerPr
                     maximumDate={new Date()}
                 />
             )}
+            {error && <Text style={styles.error}>{error}</Text>}
         </View>
     );
 };
@@ -209,6 +212,7 @@ const styles = StyleSheet.create({
         height: 200,
         alignSelf: 'center',
     },
+    error: { color: THEME.colors.error, fontSize: 12, marginTop: 4, marginLeft: 4 },
 });
 
 export default PrimaryDatePicker;

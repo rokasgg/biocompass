@@ -39,23 +39,22 @@ export const passwordSchema = z.object({
 
 // 5. PROFILE / SETTINGS SCHEMA
 export const profileSchema = z.object({
-    firstName: z.string()
-        .min(2, { message: "First name is too short" })
-        .max(50, { message: "First name is too long" }),
-    lastName: z.string()
-        .min(2, { message: "Last name is too short" }),
-    phone: z.string()
-        .min(7, { message: "Invalid phone number" })
-        // Pataisytas regex kvietimas, kad nebūtų deprecated įspėjimo:
-        .regex(/^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/im, {
-            message: "Invalid phone format"
-        }),
-    birthDate: z.date()
-        .max(new Date(), { message: "Birth date cannot be in the future" })
-        .refine((date) => {
-            const age = new Date().getFullYear() - date.getFullYear();
-            return age >= 13;
-        }, { message: "You must be at least 13 years old" }),
+    firstName: z.string().min(2, { message: "First name is too short" }),
+    lastName: z.string().min(2, { message: "Last name is too short" }),
+    phone: z.string().min(7, { message: "Invalid phone number" }),
+
+    // Naudojame z.any() ir tada transformuojame į Date. 
+    // Tai "apgauna" TS, kad jis nesikabinėtų prie įvesties tipo.
+    birthDate: z.any()
+        .transform((val) => new Date(val))
+        .pipe(
+            z.date({ message: "Invalid date" })
+                .max(new Date(), { message: "Birth date cannot be in the future" })
+                .refine((date) => {
+                    const age = new Date().getFullYear() - date.getFullYear();
+                    return age >= 13;
+                }, { message: "You must be at least 13 years old" })
+        )
 });
 
 // --- TYPES ---
