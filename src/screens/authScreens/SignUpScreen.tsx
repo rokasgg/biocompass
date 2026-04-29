@@ -4,16 +4,13 @@ import {
 } from 'react-native';
 import { BackIcon } from '../../../assets/icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { THEME } from '../../theme';
 import LeafIcon from '../../../assets/icons/leaf.svg';
 import { useStore } from '../../store/useStore';
-import HomeIcon from '../../../assets/icons/home.svg';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../../backend/supabase';
-import PasswordField from '../../compoments/PasswordField'
-import PrimaryInput from '../../compoments/PrimaryInput';
+
 import { CustomButton } from '../../compoments/CustomButton';
 import MainInput from '../../compoments/MainInput';
 import { useForm, Controller } from "react-hook-form";

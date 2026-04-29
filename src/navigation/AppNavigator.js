@@ -56,7 +56,7 @@ export default function AppNavigator() {
             const formattedProfile = mapProfileFromDB(profile);
 
             return {
-                profile: formattedProfile, // Čia bus tavo first_name, last_name ir t.t.
+                profile: formattedProfile,
                 currentScore: profile.score || 0,
                 breathingStats: profile.stats || { totalSessions: 0, byType: {}, history: [] }
             };
@@ -184,7 +184,7 @@ export default function AppNavigator() {
                         <Stack.Group name='Auth'>
                             <Stack.Screen name="Login" component={LoginScreen} />
                             <Stack.Screen name="SignUp" component={SignUpScreen} />
-                            <Stack.Screen name="ForgotPassword" component={NewProfileCreationScreen} />
+                            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
                             <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
                             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
                         </Stack.Group>

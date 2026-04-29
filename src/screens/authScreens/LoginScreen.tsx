@@ -13,17 +13,14 @@ import {
     Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { THEME } from '../../theme';
 import LeafIcon from '../../../assets/icons/leaf.svg';
-import { EyeIcon } from '../../../assets/icons';
+
 import { useStore } from '../../store/useStore';
-import HomeIcon from '../../../assets/icons/home.svg';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../../backend/supabase';
-import BioLoader from '../../compoments/BioLoader';
-import { mapProfileFromDB } from '../../utils/mapper';
+
 import { CustomButton } from '../../compoments/CustomButton';
 import MainInput from '../../compoments/MainInput';
 
