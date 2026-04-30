@@ -1,21 +1,56 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '../theme';
 import { MailIcon, Lock3Icon, SendIcon, BackIcon } from '../../assets/icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ForgotPasswordFormData, forgotPasswordSchema } from '../utils/validators';
+
+import MainInput from '../compoments/MainInput';
+import { supabase } from '../../backend/supabase';
+
+
 const ForgotPasswordScreen = () => {
     const [email, setEmail] = useState('');
 
     const navigation = useNavigation();
 
-    const handleSendResetLink = () => {
+    const { control, handleSubmit, formState: { errors } } = useForm<ForgotPasswordFormData>({
+        resolver: zodResolver(forgotPasswordSchema),
+        defaultValues: {
+            email: '',
+        },
+        mode: 'onBlur'
+    });
+
+    const handleSendResetLink = async () => {
         // Here you would typically call your backend API to send the reset link
         // For this mockup, we'll just navigate to the VerifyCode screen
-        navigation.navigate('VerifyCode');
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: 'habitra://reset-password', // Tavo Deep Link
+        });
+
+        // navigation.navigate('VerifyCode', { email: email });
     }
+
+    // const handleResetPassword = async (email: string) => {
+    //     // Sukuria dinaminį linką (Expo Go jis bus exp://..., o išleistame appse habtra://)
+    //     const resetLink = Linking.createURL('reset-password');
+
+    //     const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    //         redirectTo: resetLink,
+    //     });
+
+    //     if (error) {
+    //         console.error('Error sending reset password email:', error);
+    //     } else {
+    //         alert("Check your email!");
+    //     }
+    // };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -23,7 +58,7 @@ const ForgotPasswordScreen = () => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <BackIcon width={24} fill={THEME.colors.primary} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Security</Text>
+
                 <View style={{ width: 40 }} />
             </View>
 
@@ -41,22 +76,18 @@ const ForgotPasswordScreen = () => {
                 </Text>
 
                 <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Email Address</Text>
-                    <View style={styles.inputWrapper}>
-                        <MailIcon width={20} height={20} fill={THEME.colors.onSurfaceVariant} style={styles.mailIcon} />
-                        <TextInput
-                            style={styles.input}
-                            placeholder="e.g. hello@sagewellness.com"
-                            placeholderTextColor="rgba(67, 72, 65, 0.4)"
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            value={email}
-                            onChangeText={setEmail}
-                        />
-                    </View>
+
+                    <Controller
+                        control={control}
+                        name="email"
+                        render={({ field: { onChange, value, onBlur } }) => (
+                            <MainInput label="Email Address" placeHolder="name@example.com" onChangeText={onChange} value={value} error={errors.email?.message} onBlur={onBlur}
+                            />
+                        )}
+                    />
                 </View>
 
-                <TouchableOpacity onPress={handleSendResetLink} activeOpacity={0.8} style={styles.primaryBtnTouchable}>
+                <TouchableOpacity onPress={handleSubmit(handleSendResetLink)} activeOpacity={0.8} style={styles.primaryBtnTouchable}>
                     <LinearGradient colors={[THEME.colors.primary, THEME.colors.primaryContainer]} style={styles.primaryBtn}>
                         <View style={styles.btnContent}>
                             <Text style={styles.btnText}>Send Reset Link</Text>

@@ -16,7 +16,6 @@ const VerifyCodeScreen = () => {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}><BackIcon width={24} fill={THEME.colors.primary} /></TouchableOpacity>
-                <Text style={styles.headerTitle}>Verification</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -135,7 +134,7 @@ const styles = StyleSheet.create({
     },
     otpBoxActive: {
         borderColor: THEME.colors.primary,
-        backgroundColor: THEME.colors.surfaceContainerLowest,
+        backgroundColor: THEME.colors.surfaceContainerHighest,
     },
     otpText: {
         fontSize: 24,

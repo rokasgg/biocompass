@@ -56,9 +56,13 @@ export const profileSchema = z.object({
                 }, { message: "You must be at least 13 years old" })
         )
 });
+export const forgotPasswordSchema = z.object({
+    email: emailValidation, // Panaudojam tą patį kintamąjį!
+});
 
 // --- TYPES ---
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type SignUpFormData = z.infer<typeof signUpSchema>;
 export type PasswordFormData = z.infer<typeof passwordSchema>;
 export type ProfileFormData = z.infer<typeof profileSchema>;
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;

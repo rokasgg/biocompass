@@ -29,6 +29,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginFormData, loginSchema } from '../../utils/validators';
 
+
 const LoginScreen = () => {
 
     const [loading, setLoading] = useState(false);
@@ -120,8 +121,6 @@ const LoginScreen = () => {
                             )}
                         />
 
-
-
                         <View style={styles.inputGroup}>
                             <View style={styles.labelRow}>
                                 <Text style={styles.label}>Password</Text>
@@ -144,14 +143,14 @@ const LoginScreen = () => {
                         <CustomButton title='Sign In' onPress={handleSubmit(signInWithEmail)} loading={loading} variant='login' />
 
                         {/* --- Divider --- */}
-                        <View style={styles.dividerRow}>
+                        {/* <View style={styles.dividerRow}>
                             <View style={styles.dividerLine} />
                             <Text style={styles.dividerText}>OR</Text>
                             <View style={styles.dividerLine} />
-                        </View>
+                        </View> */}
 
                         {/* --- Social Buttons --- */}
-                        <View style={styles.socialRow}>
+                        {/* <View style={styles.socialRow}>
                             <TouchableOpacity style={styles.socialButton} >
                                 <FontAwesome name="google" size={18} color="#000" />
                                 <Text style={styles.socialButtonText}>Google</Text>
@@ -160,7 +159,7 @@ const LoginScreen = () => {
                                 <FontAwesome name="apple" size={18} color="#000" />
                                 <Text style={styles.socialButtonText}>Apple</Text>
                             </TouchableOpacity>
-                        </View>
+                        </View> */}
                     </View>
 
                     {/* --- Footer --- */}

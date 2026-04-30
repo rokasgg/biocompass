@@ -154,14 +154,14 @@ const SignUpScreen = () => {
                             <CustomButton title='Register' onPress={handleSubmit(signUpWithEmail)} variant='login' loading={loading} />
 
                             {/* --- Divider --- */}
-                            <View style={styles.dividerRow}>
+                            {/* <View style={styles.dividerRow}>
                                 <View style={styles.dividerLine} />
                                 <Text style={styles.dividerText}>OR</Text>
                                 <View style={styles.dividerLine} />
-                            </View>
+                            </View> */}
 
                             {/* --- Social Buttons --- */}
-                            <View style={styles.socialRow}>
+                            {/* <View style={styles.socialRow}>
                                 <TouchableOpacity style={styles.socialButton} onPress={signInWithGoogle}>
                                     <FontAwesome name="google" size={18} color="#000" />
                                     <Text style={styles.socialButtonText}>Google</Text>
@@ -170,7 +170,7 @@ const SignUpScreen = () => {
                                     <FontAwesome name="apple" size={18} color="#000" />
                                     <Text style={styles.socialButtonText}>Apple</Text>
                                 </TouchableOpacity>
-                            </View>
+                            </View> */}
                         </View>
                     </View>
                 </ScrollView>

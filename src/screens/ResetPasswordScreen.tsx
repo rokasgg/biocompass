@@ -14,10 +14,26 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { passwordSchema, PasswordFormData } from "../utils/validators";
 import { CustomButton } from '../compoments/CustomButton';
+import { supabase } from '../../backend/supabase';
+import * as Linking from 'expo-linking';
 
 
 const ResetPasswordScreen = () => {
     const [loading, isLoading] = useState(false);
+    const handleResetPassword = async (email: string) => {
+        // Sukuria dinaminį linką (Expo Go jis bus exp://..., o išleistame appse habtra://)
+        const resetLink = Linking.createURL('reset-password');
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: resetLink,
+        });
+
+        if (error) {
+            console.error('Error sending reset password email:', error);
+        } else {
+            alert("Check your email!");
+        }
+    };
 
     const { control, handleSubmit, formState: { errors } } = useForm<PasswordFormData>({
         resolver: zodResolver(passwordSchema),
@@ -29,7 +45,7 @@ const ResetPasswordScreen = () => {
     });
 
     const onSubmit = (data: PasswordFormData, errors: any) => {
-        console.log('data:', data);
+        handleResetPassword('rokas.gegzna@gmail.com')
     };
 
     return (
@@ -42,7 +58,6 @@ const ResetPasswordScreen = () => {
                     <Controller
                         control={control}
                         name="password"
-
                         render={({ field: { onChange, value, onBlur } }) => (
                             <MainInput label="New Password" placeHolder="••••••••" onChangeText={onChange} value={value} error={errors.password?.message}
                                 onBlur={onBlur}

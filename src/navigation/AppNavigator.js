@@ -22,7 +22,6 @@ import { mapProfileFromDB } from "../utils/mapper";
 import ManifestationSelectionScreen from "../screens/ManifestationSelectionScreen";
 import SplashScreen from "../screens/SplashScreen";
 
-
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
@@ -33,6 +32,14 @@ export default function AppNavigator() {
 
     const userCompletedReg = useStore(s => s.userCompletedReg);
     const setIsInitialLoading = useStore(s => s.setIsInitialLoading);
+    const linking = {
+        prefixes: ['habitra://'],
+        config: {
+            screens: {
+                ResetPassword: 'reset-password',
+            },
+        },
+    };
 
 
 
@@ -120,7 +127,7 @@ export default function AppNavigator() {
     }
 
     return (
-        <NavigationContainer>
+        <NavigationContainer linking={linking}>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
                 {isLoggedIn ?
                     <Stack.Group>
