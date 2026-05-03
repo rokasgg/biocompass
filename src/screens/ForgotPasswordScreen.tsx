@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Linking } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '../theme';
 import { MailIcon, Lock3Icon, SendIcon, BackIcon } from '../../assets/icons';
@@ -12,10 +12,12 @@ import { ForgotPasswordFormData, forgotPasswordSchema } from '../utils/validator
 
 import MainInput from '../compoments/MainInput';
 import { supabase } from '../../backend/supabase';
+import { createURL } from 'expo-linking';
+import * as Linking from 'expo-linking';
 
 
 const ForgotPasswordScreen = () => {
-    const [email, setEmail] = useState('');
+    const [email, setEmail] = useState('rokas.gegzna@gmail.com');
 
     const navigation = useNavigation();
 
@@ -30,27 +32,30 @@ const ForgotPasswordScreen = () => {
     const handleSendResetLink = async () => {
         // Here you would typically call your backend API to send the reset link
         // For this mockup, we'll just navigate to the VerifyCode screen
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: 'habitra://reset-password', // Tavo Deep Link
-        });
-
+        console.log('fire handleSetResetPassword with email:', email);
+        handleResetPassword(email);
         // navigation.navigate('VerifyCode', { email: email });
     }
 
-    // const handleResetPassword = async (email: string) => {
-    //     // Sukuria dinaminį linką (Expo Go jis bus exp://..., o išleistame appse habtra://)
-    //     const resetLink = Linking.createURL('reset-password');
+    const handleResetPassword = async (email: string) => {
+        // Sukuria dinaminį linką (Expo Go jis bus exp://..., o išleistame appse habtra://)
+        // const resetLink = Linking.createURL('reset-password');
+        // console.log("Mano reset linkas:", resetLink);
+        // const newLink = resetLink.replace('habtra://', 'exp://');
+        // console.log("Mano naujas reset linkas:", newLink);
+        const expoAddr = "exp://cr-dgry-brocool-8081.exp.direct";
+        const resetLink = `${expoAddr}/--/reset-password`;
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: resetLink,
+        });
 
-    //     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    //         redirectTo: resetLink,
-    //     });
-
-    //     if (error) {
-    //         console.error('Error sending reset password email:', error);
-    //     } else {
-    //         alert("Check your email!");
-    //     }
-    // };
+        if (error) {
+            console.error('Error sending reset password email:', error);
+        } else {
+            alert("Check your email!");
+            
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
