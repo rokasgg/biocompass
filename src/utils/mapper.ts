@@ -26,5 +26,6 @@ export const mapProfileToDB = (user: any) => {
     phone: user.phone,
     avatar_url: user.avatarUrl,
     updated_at: new Date().toISOString(),
+    birth_date: user.birthDate,
   };
 };

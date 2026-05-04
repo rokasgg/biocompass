@@ -16,7 +16,7 @@ type InputProps = {
     secureTextEntry?: boolean,
     placeHolder?: string,
     numersOnly?: boolean,
-    inputType?: 'email-address' | 'decimal-pad' | 'default',
+    inputType?: 'email-address' | 'decimal-pad' | 'phone-pad' | 'default',
     error?: string,
     onBlur?: () => void
 }

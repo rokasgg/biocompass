@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { email, z } from "zod";
 
 // 1. Reusable validation atoms
 
@@ -56,6 +56,27 @@ export const profileSchema = z.object({
                 }, { message: "You must be at least 13 years old" })
         )
 });
+
+// 6. PROFILE / SETTINGS SCHEMA
+export const authProfileSchema = z.object({
+
+    phone: z.string().min(7, { message: "Invalid phone number" }),
+    fullName: z.string().min(2, { message: "Full name is too short" }),
+    email: emailValidation,
+    // Naudojame z.any() ir tada transformuojame į Date. 
+    // Tai "apgauna" TS, kad jis nesikabinėtų prie įvesties tipo.
+    birthDate: z.any()
+        .transform((val) => new Date(val))
+        .pipe(
+            z.date({ message: "Invalid date" })
+                .max(new Date(), { message: "Birth date cannot be in the future" })
+                .refine((date) => {
+                    const age = new Date().getFullYear() - date.getFullYear();
+                    return age >= 13;
+                }, { message: "You must be at least 13 years old" })
+        )
+});
+
 export const forgotPasswordSchema = z.object({
     email: emailValidation, // Panaudojam tą patį kintamąjį!
 });
@@ -65,4 +86,5 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 export type SignUpFormData = z.infer<typeof signUpSchema>;
 export type PasswordFormData = z.infer<typeof passwordSchema>;
 export type ProfileFormData = z.infer<typeof profileSchema>;
+export type AuthProfileFormData = z.infer<typeof authProfileSchema>;
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;

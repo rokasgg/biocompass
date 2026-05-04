@@ -21,7 +21,7 @@ type DatePickerProps = {
 };
 
 const PrimaryDatePicker = ({ label, value, onChange, placeHolder, error }: DatePickerProps) => {
-    console.log('PrimaryDatePicker render, value:', error);
+    console.log('PrimaryDatePicker render, value:', value);
     const [show, setShow] = useState(false);
     const [tempDate, setTempDate] = useState(value || new Date());
 

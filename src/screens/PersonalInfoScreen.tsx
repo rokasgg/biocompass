@@ -1,65 +1,98 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     StyleSheet,
     View,
     Text,
-    TextInput,
     Image,
     TouchableOpacity,
     ScrollView,
     KeyboardAvoidingView,
     Platform,
-    Dimensions
+    Dimensions,
+    Alert
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { THEME } from '../theme';
-import { OpenArrow, CalendarIcon, } from '../../assets/icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useStore } from '../store/useStore';
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigation } from '@react-navigation/native';
 
-const width = Dimensions.get('window').width
-const PersonalInfoScreen = ({ navigation }) => {
+import { THEME } from '../theme';
+import { useStore } from '../store/useStore';
+import { AuthProfileFormData, authProfileSchema } from '../utils/validators';
+import MainInput from '../compoments/MainInput';
+import PrimaryDatePicker from '../compoments/PrimaryDatePicker';
+import { supabase } from '../../backend/supabase';
+import { mapProfileToDB } from '../utils/mapper';
+
+const { width } = Dimensions.get('window');
+
+const PersonalInfoScreen = () => {
+    const navigation = useNavigation();
     const user = useStore(s => s.user ?? null);
     const setUser = useStore(s => s.setUser);
-    console.log('email', user)
-    const [form, setForm] = useState({
-        fullName: `${user?.firstName} ${user?.lastName}`,
-        email: user?.email,
-        phone: user?.phone,
-        birthDate: user?.birthDate || 'March 12, 1994',
-        height: '172',
-        weight: '64',
+
+    // 1. Setup Form with default values directly from store
+    const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<AuthProfileFormData>({
+        resolver: zodResolver(authProfileSchema),
+        defaultValues: {
+            fullName: user ? `${user.firstName} ${user.lastName}` : '',
+            email: user?.email || '',
+            phone: user?.phone || '',
+            birthDate: user?.birthDate || '1994-03-12', // Use ISO format for better compatibility
+        },
+        mode: 'onBlur'
     });
 
-    const saveSettings = () => {
-        const userData = {
-            ...user, ...form
+    // 2. Optimized Save Logic
+    const saveSettings = async (data: AuthProfileFormData) => {
+        try {
+            console.log("Saving validated data:", data);
+
+            // Update local store first for optimistic UI or just to keep sync
+            const [firstName, ...lastNameParts] = data.fullName.split(' ');
+            const updatedUser = {
+                ...user,
+                firstName,
+                lastName: lastNameParts.join(' '),
+                email: data.email,
+                phone: data.phone,
+                birthDate: data.birthDate
+            };
+
+            const dbProfile = mapProfileToDB(updatedUser);
+
+            const { error } = await supabase
+                .from('profiles')
+                .update(dbProfile)
+                .eq('id', user?.userId);
+
+            if (error) throw error;
+
+            setUser(updatedUser);
+            Alert.alert("Success", "Profile updated successfully!");
+        } catch (error: any) {
+            console.error('Error updating user:', error);
+            Alert.alert("Error", error.message || "Failed to update profile.");
         }
-        setUser(userData)
-    }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* --- Top App Bar --- */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Text style={styles.backArrow}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Personal Info</Text>
-                <TouchableOpacity style={styles.headerBtn}>
-                    {/* <MoreIcon width={24} height={24} fill={THEME.colors.primary} /> */}
-                </TouchableOpacity>
+                <View style={{ width: 40 }} />
             </View>
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
             >
-                <ScrollView
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                >
-                    {/* --- Profile Header --- */}
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
                     <View style={styles.profileHeader}>
                         <View style={styles.avatarWrapper}>
                             <Image
@@ -67,73 +100,100 @@ const PersonalInfoScreen = ({ navigation }) => {
                                 style={styles.avatarImage}
                             />
                             <TouchableOpacity style={styles.editBadge}>
-                                {/* <EditIcon width={14} height={14} fill="white" /> */}
-                                <Text style={{ fontSize: 12, color: THEME.colors.onPrimaryContainer }}>✎</Text>
+                                <Text style={{ fontSize: 12, color: 'white' }}>✎</Text>
                             </TouchableOpacity>
                         </View>
-                        <Text style={styles.userName}>{form.fullName}</Text>
+                        {/* We can use watch() from useForm if you want this text to update live */}
+                        <Text style={styles.userName}>{user?.firstName} {user?.lastName}</Text>
                         <Text style={styles.memberSince}>Member since June 2023</Text>
                     </View>
 
-                    {/* --- Identity Form --- */}
                     <View style={styles.formSection}>
-                        <InputField
-                            label="Full Name"
-                            value={form.fullName}
-                            onChangeText={(val) => setForm({ ...form, fullName: val })}
-                        />
-                        <InputField
-                            label="Email Address"
-                            value={form.email}
-                            keyboardType="email-address"
-                            onChangeText={(val) => setForm({ ...form, email: val })}
-                        />
-                        <InputField
-                            label="Phone Number"
-                            value={form.phone}
-                            keyboardType="phone-pad"
-                            onChangeText={(val) => setForm({ ...form, phone: val })}
-                        />
-                    </View>
-
-                    {/* --- Metrics Bento Grid --- */}
-                    <View style={styles.bentoContainer}>
-                        <View style={styles.fullWidthInput}>
-                            <Text style={styles.label}>Birth Date</Text>
-                            <View style={styles.inputWithIcon}>
-                                <TextInput
-                                    style={styles.input}
-                                    value={form.birthDate}
-                                    onChangeText={(val) => setForm({ ...form, birthDate: val })}
+                        <Controller
+                            control={control}
+                            name="fullName"
+                            render={({ field: { onChange, value, onBlur } }) => (
+                                <MainInput
+                                    label="Full Name"
+                                    onChangeText={onChange}
+                                    value={value}
+                                    error={errors.fullName?.message}
+                                    onBlur={onBlur}
                                 />
-                                <CalendarIcon width={20} fill={THEME.colors.onSurfaceVariant} style={styles.rightIcon} />
-                            </View>
-                        </View>
+                            )}
+                        />
 
+                        <Controller
+                            control={control}
+                            name="email"
+                            render={({ field: { onChange, value, onBlur } }) => (
+                                <MainInput
+                                    label="Email Address"
+                                    inputType="email-address"
+                                    onChangeText={onChange}
+                                    value={value}
+                                    error={errors.email?.message}
+                                    onBlur={onBlur}
+                                />
+                            )}
+                        />
 
+                        <Controller
+                            control={control}
+                            name="phone"
+                            render={({ field: { onChange, value, onBlur } }) => (
+                                <MainInput
+                                    label="Phone Number"
+                                    inputType="phone-pad"
+                                    onChangeText={onChange}
+                                    value={value}
+                                    error={errors.phone?.message}
+                                    onBlur={onBlur}
+                                />
+                            )}
+                        />
+
+                        <Controller
+                            control={control}
+                            name="birthDate"
+                            render={({ field: { onChange, value } }) => (
+                                <PrimaryDatePicker
+                                    label="Birth Date"
+                                    value={value ? new Date(value) : new Date()}
+                                    onChange={(selectedDate) => {
+                                        // Convert Date object back to string for the form state
+                                        onChange(selectedDate.toISOString().split('T')[0]);
+                                    }}
+                                    error={errors.birthDate?.message}
+                                />
+                            )}
+                        />
                     </View>
 
-                    {/* --- Information Card --- */}
                     <View style={styles.infoCard}>
                         <View style={{ maxWidth: '70%' }}>
                             <Text style={styles.infoTitle}>Restorative Pulse</Text>
                             <Text style={styles.infoSubtitle}>
-                                Your metrics help us curate a wellness journey that respects your body's unique rhythm. All data is encrypted and private.
+                                Your metrics help us curate a wellness journey that respects your body's unique rhythm.
                             </Text>
                         </View>
-                        {/* <SpaIcon width={80} height={80} fill={THEME.colors.primary} opacity={0.1} style={styles.infoBgIcon} /> */}
                     </View>
 
-                    {/* --- Save Button --- */}
                     <View style={styles.actionSection}>
-                        <TouchableOpacity activeOpacity={0.8} onPress={saveSettings}>
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={handleSubmit(saveSettings)}
+                            disabled={isSubmitting}
+                        >
                             <LinearGradient
                                 colors={[THEME.colors.primary, THEME.colors.primaryContainer]}
-                                style={styles.saveBtn}
+                                style={[styles.saveBtn, isSubmitting && { opacity: 0.7 }]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
                             >
-                                <Text style={styles.saveBtnText}>Save Changes</Text>
+                                <Text style={styles.saveBtnText}>
+                                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                                </Text>
                             </LinearGradient>
                         </TouchableOpacity>
                         <Text style={styles.lastUpdated}>LAST UPDATED: 2 DAYS AGO</Text>
@@ -145,29 +205,7 @@ const PersonalInfoScreen = ({ navigation }) => {
     );
 };
 
-// --- Reusable Sub-components ---
 
-const InputField = ({ label, value, ...props }) => (
-    <View style={styles.inputWrapper}>
-        <Text style={styles.label}>{label}</Text>
-        <TextInput
-            style={styles.input}
-            value={value}
-            placeholderTextColor={THEME.colors.outlineVariant}
-            {...props}
-        />
-    </View>
-);
-
-const MetricBox = ({ label, value, unit }) => (
-    <View style={styles.metricBox}>
-        <Text style={styles.label}>{label}</Text>
-        <View style={styles.metricValueRow}>
-            <Text style={styles.metricValue}>{value}</Text>
-            <Text style={styles.metricUnit}>{unit}</Text>
-        </View>
-    </View>
-);
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: THEME.colors.background },
@@ -198,7 +236,7 @@ const styles = StyleSheet.create({
     userName: { fontSize: 24, fontWeight: '800', color: THEME.colors.onSurface },
     memberSince: { fontSize: 14, color: THEME.colors.onSurfaceVariant, marginTop: 4 },
 
-    formSection: { gap: 24, marginBottom: 24 },
+    formSection: { gap: 4, marginBottom: 24 },
     inputWrapper: { gap: 8, flexDirection: 'column' },
     label: { fontSize: 10, fontWeight: '800', color: THEME.colors.secondary, letterSpacing: 1.5, textTransform: 'uppercase', marginLeft: 4 },
     input: {
