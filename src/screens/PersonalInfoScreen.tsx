@@ -32,24 +32,23 @@ const PersonalInfoScreen = () => {
     const user = useStore(s => s.user ?? null);
     const setUser = useStore(s => s.setUser);
 
-    // 1. Setup Form with default values directly from store
     const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<AuthProfileFormData>({
         resolver: zodResolver(authProfileSchema),
         defaultValues: {
             fullName: user ? `${user.firstName} ${user.lastName}` : '',
             email: user?.email || '',
             phone: user?.phone || '',
-            birthDate: user?.birthDate || '1994-03-12', // Use ISO format for better compatibility
+            birthDate: user?.birthDate || '1994-03-12',
         },
         mode: 'onBlur'
     });
 
-    // 2. Optimized Save Logic
+
     const saveSettings = async (data: AuthProfileFormData) => {
         try {
             console.log("Saving validated data:", data);
 
-            // Update local store first for optimistic UI or just to keep sync
+
             const [firstName, ...lastNameParts] = data.fullName.split(' ');
             const updatedUser = {
                 ...user,
@@ -103,7 +102,7 @@ const PersonalInfoScreen = () => {
                                 <Text style={{ fontSize: 12, color: 'white' }}>✎</Text>
                             </TouchableOpacity>
                         </View>
-                        {/* We can use watch() from useForm if you want this text to update live */}
+
                         <Text style={styles.userName}>{user?.firstName} {user?.lastName}</Text>
                         <Text style={styles.memberSince}>Member since June 2023</Text>
                     </View>

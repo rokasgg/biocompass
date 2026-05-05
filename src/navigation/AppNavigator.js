@@ -32,6 +32,7 @@ export default function AppNavigator() {
 
     const userCompletedReg = useStore(s => s.userCompletedReg);
     const setIsInitialLoading = useStore(s => s.setIsInitialLoading);
+
     const linking = {
         prefixes: ['habitra://'],
         config: {
@@ -100,7 +101,6 @@ export default function AppNavigator() {
     useEffect(() => {
 
         initializeAuth();
-
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log('Auth event:', event);
 

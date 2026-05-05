@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     StyleSheet,
     View,
@@ -17,6 +17,7 @@ import MetricCard from '../compoments/MetricWidget';
 import VitalityPlumbob from '../compoments/VitalityPlumbob';
 import { useNavigation } from '@react-navigation/native';
 import { useStore } from '../store/useStore';
+import { HealthService } from '../utils/healthService';
 
 
 
@@ -32,6 +33,35 @@ const HomeScreen = () => {
         // setScore(score + 20)
         console.log('score:', score, user)
     };
+
+    // const syncHealth = async () => {
+    //     const data = await HealthService.getDailySnapshot();
+    //     if (data) {
+    //         console.log(`Today's Steps: ${data.steps}`);
+    //         console.log(`Hours Slept: ${data.sleep}`);
+    //         // Now you can update your form state or Supabase with these values!
+    //     }
+    // };
+    const syncHealthData = async () => {
+        try {
+            // 1. Paprašom leidimo (iššoks Apple langas)
+            const authorized = await HealthService.authorize();
+
+            if (authorized) {
+                // 2. Jei leido, pasiimam duomenis
+                const data = await HealthService.getDailySnapshot();
+                console.log("Mano duomenys:", data);
+
+                // Čia gali užpildyti savo formą ar state
+                // setForm({...form, steps: data.steps});
+            }
+        } catch (err) {
+            console.log("Nepavyko gauti duomenų", err);
+        }
+    };
+    useEffect(() => {
+        syncHealthData();
+    }, []);
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />

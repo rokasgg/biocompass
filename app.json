@@ -13,7 +13,12 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "We need your steps and sleep data to personalize your wellness journey.",
+        "NSHealthUpdateUsageDescription": "We use your data to help you visualize your progress."
+      },
+      "bundleIdentifier": "com.brocool.HabTra"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,13 +27,23 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.brocool.HabTra"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "react-native-health",
+        {
+          "access": [
+            "StepCount",
+            "SleepAnalysis"
+          ]
+        }
+      ]
     ]
   }
 }
