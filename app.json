@@ -36,13 +36,16 @@
     "plugins": [
       "@react-native-community/datetimepicker",
       [
-        "react-native-health",
+        "expo-build-properties",
         {
-          "access": [
-            "StepCount",
-            "SleepAnalysis"
-          ]
+          "ios": {
+            "deploymentTarget": "13.4"
+          }
         }
+      ],
+      [
+        "expo-apple-authentication",
+        {}
       ]
     ]
   }
