@@ -14,11 +14,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "infoPlist": {
-        "NSHealthShareUsageDescription": "We need your steps and sleep data to personalize your wellness journey.",
-        "NSHealthUpdateUsageDescription": "We use your data to help you visualize your progress."
-      },
-      "bundleIdentifier": "com.brocool.HabTra"
+      "bundleIdentifier": "com.brocool.HabTra",
+      "entitlements": {
+        "com.apple.developer.healthkit": true
+      }
+      // IŠTRINTAS infoPlist blokas iš čia!
     },
     "android": {
       "adaptiveIcon": {
@@ -27,25 +27,26 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false,
       "package": "com.brocool.HabTra"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
     "plugins": [
+      "expo-dev-client",
       "@react-native-community/datetimepicker",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "healthShareUsageDescription": "We need your steps and sleep data to personalize your wellness journey.",
+          "healthUpdateUsageDescription": "We use your data to help you visualize your progress."
+        },
+        
+      ],
       [
         "expo-build-properties",
         {
           "ios": {
-            "deploymentTarget": "13.4"
+            "deploymentTarget": "15.1"
           }
         }
-      ],
-      [
-        "expo-apple-authentication",
-        {}
       ]
     ]
   }

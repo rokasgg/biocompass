@@ -1,4 +1,4 @@
-import React, { use, useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
     StyleSheet,
     View,
@@ -8,6 +8,7 @@ import {
     StatusBar,
     Dimensions,
     Platform,
+    Button,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 // Importing your Global Design Tokens
@@ -17,12 +18,15 @@ import MetricCard from '../compoments/MetricWidget';
 import VitalityPlumbob from '../compoments/VitalityPlumbob';
 import { useNavigation } from '@react-navigation/native';
 import { useStore } from '../store/useStore';
-
-import { useSteps } from '../hooks/useSteps';
-
-
+import {
+    requestAuthorization,
+    useStatisticsForQuantity,
+    queryCategorySamples,
+} from '@kingstinct/react-native-healthkit';
 
 const { width } = Dimensions.get('window');
+
+
 
 const HomeScreen = () => {
 
@@ -32,14 +36,109 @@ const HomeScreen = () => {
     const addScore = () => {
         // Logic to add score would go here
         // setScore(score + 20)
-        console.log('score:', score, user)
+        console.log('🏃 Step Count Data:', {
+            stepCount,
+            rawStats: stats,
+            isAuthorized,
+            isLoadingSteps,
+            error,
+            score,
+        });
     };
 
-    const { steps, ready } = useSteps()
+    const [error, setError] = useState<string | null>(null);
+    const [isAuthorized, setIsAuthorized] = useState(false);
 
-    console.log('Steps data:', steps, 'Ready:', ready);
+    // 1. Request authorization for both steps and sleep on mount
+    useEffect(() => {
+        const requestHealthKitPermissions = async () => {
+            try {
+                const authorized = await requestAuthorization({
+                    toRead: [
+                        'HKQuantityTypeIdentifierStepCount',
+                        'HKCategoryTypeIdentifierSleepAnalysis'
+                    ]
+                });
+                setIsAuthorized(authorized);
+                if (!authorized) {
+                    setError("HealthKit permission was denied.");
+                }
+            } catch (e: any) {
+                console.error("HealthKit authorization error:", e);
+                setError(e?.message || "Failed to authorize HealthKit.");
+                setIsAuthorized(false);
+            }
+        };
+        requestHealthKitPermissions();
+    }, []);
 
+    // 2. Set up stable date range
+    const { start, end } = useMemo(() => {
+        const s = new Date();
+        s.setHours(0, 0, 0, 0);
+        const e = new Date();
+        return { start: s, end: e };
+    }, []);
 
+    // 3. Always call the hook unconditionally (even if not authorized, it handles it)
+    const stats = useStatisticsForQuantity(
+        'HKQuantityTypeIdentifierStepCount',
+        ['cumulativeSum'],
+        start,
+        end
+    );
+
+    // Extract step count from hook result
+    const stepCount = stats?.sumQuantity?.quantity ? Math.round(stats.sumQuantity.quantity) : 0;
+    const isLoadingSteps = isAuthorized && stats === null;
+
+    // 4. Fetch sleep data - query category samples for sleep analysis
+    const [sleepDisplayText, setSleepDisplayText] = useState("--");
+    const [isLoadingSleep, setIsLoadingSleep] = useState(false);
+
+    useEffect(() => {
+        if (!isAuthorized) return;
+
+        const fetchSleepData = async () => {
+            try {
+                setIsLoadingSleep(true);
+                const sleepSamples = await queryCategorySamples(
+                    'HKCategoryTypeIdentifierSleepAnalysis',
+                    {
+                        limit: 0,
+                        filter: {
+                            date: {
+                                startDate: start,
+                                endDate: end
+                            }
+                        }
+                    }
+                );
+
+                if (sleepSamples && sleepSamples.length > 0) {
+                    // Calculate total sleep time
+                    const totalSleepMs = sleepSamples.reduce((total, sample) => {
+                        const duration = new Date(sample.endDate).getTime() - new Date(sample.startDate).getTime();
+                        return total + duration;
+                    }, 0);
+
+                    const totalSleepMinutes = Math.floor(totalSleepMs / 60000);
+                    const hours = Math.floor(totalSleepMinutes / 60);
+                    const minutes = totalSleepMinutes % 60;
+                    setSleepDisplayText(hours > 0 || minutes > 0 ? `${hours}h ${minutes}m` : "No data");
+                } else {
+                    setSleepDisplayText("No data");
+                }
+            } catch (err) {
+                console.error("Error fetching sleep data:", err);
+                setSleepDisplayText("Error");
+            } finally {
+                setIsLoadingSleep(false);
+            }
+        };
+
+        fetchSleepData();
+    }, [isAuthorized, start, end]);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -56,6 +155,7 @@ const HomeScreen = () => {
                         <Text style={styles.heroOverline}>VITALITY SCORE</Text>
                         <Text style={styles.heroMainTitle}>BioCompass</Text>
                     </View>
+
 
                     {/* Plumbob Visual Placeholder */}
                     <View style={styles.plumbobContainer}>
@@ -76,14 +176,14 @@ const HomeScreen = () => {
                 <View style={styles.metricsGrid}>
                     <MetricCard
                         vibe="steps"
-                        value="8,432"
-                        badge="+12%"
-                        progress={0.7}
+                        value={stepCount.toLocaleString()}
+                        badge={isLoadingSteps ? "Loading..." : "+12%"}
+                        progress={Math.min(stepCount / 10000, 1)}
                     />
                     <MetricCard
                         vibe="sleep"
-                        value="7h 24m"
-                        badge="Deep Rest"
+                        value={sleepDisplayText}
+                        badge={isLoadingSleep ? "Loading..." : "Deep Rest"}
                         progress={0.85}
                     />
                     <MetricCard
