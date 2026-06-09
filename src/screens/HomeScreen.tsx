@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import {
     StyleSheet,
     View,
@@ -7,17 +7,16 @@ import {
     TouchableOpacity,
     StatusBar,
     Dimensions,
-    Platform,
-    Button,
+    Animated,
+    Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// Importing your Global Design Tokens
 import { THEME } from '../theme';
 import MetricCard from '../compoments/MetricWidget';
-
 import VitalityPlumbob from '../compoments/VitalityPlumbob';
 import { useNavigation } from '@react-navigation/native';
 import { useStore } from '../store/useStore';
+
 import {
     requestAuthorization,
     useStatisticsForQuantity,
@@ -26,30 +25,25 @@ import {
 
 const { width } = Dimensions.get('window');
 
-
-
 const HomeScreen = () => {
-
+    // 1. Išsitraukiam iš Store, ar checkinai jau padaryti!
+    // (Pridėk juos į savo store. Jei dar nepridėjai, kol kas gali naudoti useState testavimui)
     const score = useStore((state) => state.score);
-    const user = useStore(state => state.user);
-    const navigation = useNavigation();
-    const addScore = () => {
-        // Logic to add score would go here
-        // setScore(score + 20)
-        console.log('🏃 Step Count Data:', {
-            stepCount,
-            rawStats: stats,
-            isAuthorized,
-            isLoadingSteps,
-            error,
-            score,
-        });
-    };
+    const screenTimeMinutes = useStore(state => state.screenTime);
+    const hasCompletedMorningCheckIn = useStore((state) => (state as any).hasCompletedMorningCheckIn || false);
+    const hasCompletedEveningCheckIn = useStore((state) => (state as any).hasCompletedEveningCheckIn || false);
 
+    const navigation = useNavigation();
     const [error, setError] = useState<string | null>(null);
     const [isAuthorized, setIsAuthorized] = useState(false);
+    const [now, setNow] = useState(new Date());
+    const pulse = useRef(new Animated.Value(1)).current;
 
-    // 1. Request authorization for both steps and sleep on mount
+    useEffect(() => {
+        const t = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(t);
+    }, []);
+
     useEffect(() => {
         const requestHealthKitPermissions = async () => {
             try {
@@ -58,21 +52,16 @@ const HomeScreen = () => {
                         'HKQuantityTypeIdentifierStepCount',
                         'HKCategoryTypeIdentifierSleepAnalysis'
                     ]
-                });
+                } as any);
                 setIsAuthorized(authorized);
-                if (!authorized) {
-                    setError("HealthKit permission was denied.");
-                }
             } catch (e: any) {
                 console.error("HealthKit authorization error:", e);
-                setError(e?.message || "Failed to authorize HealthKit.");
                 setIsAuthorized(false);
             }
         };
         requestHealthKitPermissions();
     }, []);
 
-    // 2. Set up stable date range
     const { start, end } = useMemo(() => {
         const s = new Date();
         s.setHours(0, 0, 0, 0);
@@ -80,48 +69,91 @@ const HomeScreen = () => {
         return { start: s, end: e };
     }, []);
 
-    // 3. Always call the hook unconditionally (even if not authorized, it handles it)
+    // --- DIENOS FAZIŲ IR MYGTUKŲ RODYMO LOGIKA ---
+    const currentHour = now.getHours();
+    const isMorningPhase = currentHour >= 6 && currentHour < 17;
+    const isEveningPhase = currentHour >= 17 && currentHour < 24;
+    const isNightPhase = currentHour >= 0 && currentHour < 6;
+
+    // Ar tikrai rodyti mygtuką? (Fazė aktyvi IR checkinas dar nepadarytas)
+    const showMorningButton = isMorningPhase && !hasCompletedMorningCheckIn;
+    const showEveningButton = isEveningPhase && !hasCompletedEveningCheckIn;
+
+    // Jei nerodom jokio mygtuko, reiškia esam "Užrakintame / Laukimo" režime
+    const isCheckinLocked = !showMorningButton && !showEveningButton;
+
+    // Apskaičiuojam koks bus Kitas Checkinas, kurio laukiam
+    const nextCheckinTargetDate = useMemo(() => {
+        const target = new Date(now);
+
+        if (isMorningPhase && hasCompletedMorningCheckIn) {
+            // Laukiam vakaro (17:00)
+            target.setHours(17, 0, 0, 0);
+        } else if ((isEveningPhase && hasCompletedEveningCheckIn) || isNightPhase) {
+            // Laukiam rytojaus (06:00)
+            if (isEveningPhase) {
+                target.setDate(target.getDate() + 1);
+            }
+            target.setHours(6, 0, 0, 0);
+        }
+        return target;
+    }, [now, isMorningPhase, isEveningPhase, isNightPhase, hasCompletedMorningCheckIn, hasCompletedEveningCheckIn]);
+
+    const lockedRemainingMs = Math.max(nextCheckinTargetDate.getTime() - now.getTime(), 0);
+
+    // Koks tekstas bus laukimo ekranėlyje
+    const lockedMessageText = useMemo(() => {
+        if (isMorningPhase && hasCompletedMorningCheckIn) return "Evening check-in unlocks in";
+        if (isEveningPhase && hasCompletedEveningCheckIn) return "Morning check-in unlocks in";
+        if (isNightPhase) return "Morning check-in unlocks in";
+        return "Check-in unlocks in";
+    }, [isMorningPhase, isEveningPhase, isNightPhase, hasCompletedMorningCheckIn, hasCompletedEveningCheckIn]);
+
+
+    // Deimantuko matematika (priklauso nuo fazės)
+    const maxAvailableScore = isMorningPhase ? 40 : 100;
+    const vitalityPercentage = Math.min(Math.round((score / maxAvailableScore) * 100), 100);
+
+    useEffect(() => {
+        if (!isCheckinLocked) {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulse, { toValue: 1.04, duration: 800, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+                    Animated.timing(pulse, { toValue: 1.0, duration: 800, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+                ])
+            ).start();
+        } else {
+            pulse.setValue(1);
+        }
+    }, [isCheckinLocked]);
+
+    // --- HEALTHKIT DATA ---
     const stats = useStatisticsForQuantity(
         'HKQuantityTypeIdentifierStepCount',
         ['cumulativeSum'],
         start,
         end
     );
-
-    // Extract step count from hook result
     const stepCount = stats?.sumQuantity?.quantity ? Math.round(stats.sumQuantity.quantity) : 0;
     const isLoadingSteps = isAuthorized && stats === null;
 
-    // 4. Fetch sleep data - query category samples for sleep analysis
     const [sleepDisplayText, setSleepDisplayText] = useState("--");
     const [isLoadingSleep, setIsLoadingSleep] = useState(false);
 
     useEffect(() => {
         if (!isAuthorized) return;
-
         const fetchSleepData = async () => {
             try {
                 setIsLoadingSleep(true);
                 const sleepSamples = await queryCategorySamples(
                     'HKCategoryTypeIdentifierSleepAnalysis',
-                    {
-                        limit: 0,
-                        filter: {
-                            date: {
-                                startDate: start,
-                                endDate: end
-                            }
-                        }
-                    }
+                    { limit: 0, filter: { date: { startDate: start, endDate: end } } }
                 );
 
                 if (sleepSamples && sleepSamples.length > 0) {
-                    // Calculate total sleep time
                     const totalSleepMs = sleepSamples.reduce((total, sample) => {
-                        const duration = new Date(sample.endDate).getTime() - new Date(sample.startDate).getTime();
-                        return total + duration;
+                        return total + (new Date(sample.endDate).getTime() - new Date(sample.startDate).getTime());
                     }, 0);
-
                     const totalSleepMinutes = Math.floor(totalSleepMs / 60000);
                     const hours = Math.floor(totalSleepMinutes / 60);
                     const minutes = totalSleepMinutes % 60;
@@ -130,219 +162,129 @@ const HomeScreen = () => {
                     setSleepDisplayText("No data");
                 }
             } catch (err) {
-                console.error("Error fetching sleep data:", err);
                 setSleepDisplayText("Error");
             } finally {
                 setIsLoadingSleep(false);
             }
         };
-
         fetchSleepData();
     }, [isAuthorized, start, end]);
 
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
-
-            {/* --- Top App Bar --- */}
-            {/* <HeaderBar title="BioCompass" onPress={() => alert('Header pressed')} /> */}
-
             <ScrollView contentContainerStyle={styles.scrollContent}>
 
-                {/* --- Hero Section: Plumbob / Vitality --- */}
+                {/* --- Hero Section --- */}
                 <View style={styles.heroSection}>
+
+                    {/* --- Dinaminis Check-in Mygtukas / Laikmatis --- */}
+                    <View style={styles.checkinWrapper}>
+                        {!isCheckinLocked ? (
+                            <Animated.View style={[styles.checkinButtonWrap, { transform: [{ scale: pulse }] }]}>
+                                <TouchableOpacity
+                                    activeOpacity={0.8}
+                                    style={[styles.checkinButton, showEveningButton && { backgroundColor: '#8e44ad' }]}
+                                    onPress={() => (navigation as any).navigate('DailyCheckInEntry', { phase: showMorningButton ? 'morning' : 'evening' })}
+                                >
+                                    <Text style={styles.checkinText}>
+                                        {showMorningButton ? "☀️ Complete Morning Check-in" : "🌙 Complete Evening Check-in"}
+                                    </Text>
+                                </TouchableOpacity>
+                            </Animated.View>
+                        ) : (
+                            <View style={styles.checkinLocked}>
+                                <View style={styles.checkinLockedTextRow}>
+                                    <Text style={styles.checkinLockedText}>{lockedMessageText}</Text>
+                                    <Text style={styles.checkinLockedTimer}>
+                                        {new Date(lockedRemainingMs).toISOString().substr(11, 8)}
+                                    </Text>
+                                </View>
+                                {/* Paimtas statinis fonas, be judančio progress baro, kad neapkrautų UX kai laukiama ilgai */}
+                                <View style={styles.progressBarBackground}>
+                                    <View style={[styles.progressBarFill, { width: '100%', backgroundColor: THEME.colors.surfaceContainerHigh }]} />
+                                </View>
+                            </View>
+                        )}
+                    </View>
+
                     <View style={styles.heroTextContainer}>
-                        <Text style={styles.heroOverline}>VITALITY SCORE</Text>
+                        <Text style={styles.heroOverline}>
+                            {isMorningPhase ? "MORNING ENERGY EXPECTATION" : "EVENING BALANCE EXPECTATION"}
+                        </Text>
                         <Text style={styles.heroMainTitle}>BioCompass</Text>
                     </View>
 
-
-                    {/* Plumbob Visual Placeholder */}
+                    {/* Plumbob Deimantukas */}
                     <View style={styles.plumbobContainer}>
-                        <TouchableOpacity style={styles.plumbobDiamond} onPress={addScore}>
-                            {/* Note: In a real app, this would be an SVG or 3D model */}
-                            <VitalityPlumbob isLoading={false} score={score} />
+                        <TouchableOpacity style={styles.plumbobDiamond} activeOpacity={0.9}>
+                            <VitalityPlumbob isLoading={false} score={vitalityPercentage} />
                         </TouchableOpacity>
-                        {/* <View style={styles.plumbobShadow} /> */}
                     </View>
 
                     <View style={styles.heroFooter}>
-                        <Text style={styles.vitalityPercentage}>84%</Text>
-                        <Text style={styles.vitalitySubtext}>Capacity maintained</Text>
+                        <Text style={styles.vitalityPercentage}>{vitalityPercentage}%</Text>
+                        <Text style={styles.vitalitySubtext}>Phase capacity filled</Text>
                     </View>
                 </View>
 
-                {/* --- Metrics Bento Grid --- */}
+                {/* --- Bento Grid Metrics --- */}
                 <View style={styles.metricsGrid}>
-                    <MetricCard
-                        vibe="steps"
-                        value={stepCount.toLocaleString()}
-                        badge={isLoadingSteps ? "Loading..." : "+12%"}
-                        progress={Math.min(stepCount / 10000, 1)}
-                    />
-                    <MetricCard
-                        vibe="sleep"
-                        value={sleepDisplayText}
-                        badge={isLoadingSleep ? "Loading..." : "Deep Rest"}
-                        progress={0.85}
-                    />
-                    <MetricCard
-                        vibe="calories"
-                        value="1,850"
-                        badge="BALANCED"
-                        progress={0.6}
-                    />
+                    <MetricCard vibe="steps" value={stepCount.toLocaleString()} badge={isLoadingSteps ? "Loading..." : "Syncing"} progress={Math.min(stepCount / 10000, 1)} />
+                    <MetricCard vibe="sleep" value={sleepDisplayText} badge={isLoadingSleep ? "Loading..." : "Rest Tracker"} progress={0.85} />
+                    <MetricCard vibe="screenTime" value={(() => {
+                        const m = screenTimeMinutes || 0;
+                        const h = Math.floor(m / 60);
+                        const mm = m % 60;
+                        return h > 0 || mm > 0 ? `${h}h ${mm}m` : '0h';
+                    })()} badge={screenTimeMinutes ? 'Manual Input' : '—'} progress={Math.min((screenTimeMinutes || 0) / (12 * 60), 1)} />
                 </View>
 
-                {/* --- Inspiration Section --- */}
+                {/* --- Nukreipimo skiltis --- */}
                 <View style={styles.inspirationCard}>
                     <View style={styles.inspirationTextContent}>
-                        <Text style={styles.inspirationTitle}>Focus on the Breath</Text>
-                        <Text style={styles.inspirationBody}>
-                            Your heart rate variability indicates a high readiness for mindful movement.
-                        </Text>
-                        <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('BreathworkGallery')}>
-                            <Text style={styles.buttonText}>Start Session</Text>
+                        <Text style={styles.inspirationTitle}>Need to breathe?</Text>
+                        <Text style={styles.inspirationBody}>Take a moment for quick centering right now.</Text>
+                        <TouchableOpacity style={styles.primaryButton} onPress={() => (navigation as any).navigate('BreathworkGallery')}>
+                            <Text style={styles.buttonText}>Quick Breathing</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
             </ScrollView>
-
         </SafeAreaView>
     );
 };
 
-// Internal Metric Card Component
-
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: THEME.colors.background },
-    header: {
-        height: 64,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: THEME.spacing.lg,
-        backgroundColor: 'rgba(243, 244, 240, 0.8)',
-    },
-    headerLeft: { flexDirection: 'row', alignItems: 'center' },
-    avatarMiniContainer: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: THEME.colors.surfaceContainerHigh, overflow: 'hidden'
-    },
-    miniAvatar: { width: '100%', height: '100%' },
-    headerTitle: {
-        fontSize: THEME.fontSize.lg,
-        fontWeight: '800',
-        color: THEME.colors.primary,
-        marginLeft: THEME.spacing.sm
-    },
-    iconButton: {
-        width: 40, height: 40, borderRadius: 20,
-        justifyContent: 'center', alignItems: 'center'
-    },
     scrollContent: { paddingHorizontal: THEME.spacing.lg, paddingBottom: 120 },
-
-    // Hero / Vitality Section
-    heroSection: {
-        backgroundColor: THEME.colors.surfaceContainerLow,
-        borderRadius: THEME.radius.lg,
-        padding: THEME.spacing.xl,
-        marginTop: THEME.spacing.md,
-        minHeight: 400,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    heroTextContainer: { position: 'absolute', top: 30, left: 25 },
-    heroOverline: {
-        fontSize: 12, fontWeight: '700',
-        color: THEME.colors.secondary, letterSpacing: 1.5
-    },
-    heroMainTitle: {
-        fontSize: 38, fontWeight: '900',
-        color: THEME.colors.onSurface, fontStyle: 'italic'
-    },
-    plumbobContainer: { alignItems: 'center', justifyContent: 'center' },
-    plumbobDiamond: { /* Logic for 3D rotation would go here */ },
-    plumbobShadow: {
-        width: 100, height: 15,
-        backgroundColor: 'rgba(74, 101, 73, 0.1)',
-        borderRadius: 50, marginTop: 20,
-        filter: Platform.OS === 'ios' ? 'blur(10px)' : undefined
-    },
-    heroFooter: { position: 'absolute', bottom: 30, right: 25, alignItems: 'flex-end' },
-    vitalityPercentage: { fontSize: 24, fontWeight: '800', color: THEME.colors.primary },
+    heroSection: { backgroundColor: THEME.colors.surfaceContainerLow, borderRadius: THEME.radius.lg, padding: THEME.spacing.xl, marginTop: THEME.spacing.md, minHeight: 440, alignItems: 'center', justifyContent: 'center' },
+    heroTextContainer: { width: '100%', alignItems: 'flex-start', marginVertical: 10 },
+    heroOverline: { fontSize: 11, fontWeight: '700', color: THEME.colors.secondary, letterSpacing: 1.5 },
+    heroMainTitle: { fontSize: 34, fontWeight: '900', color: THEME.colors.onSurface, fontStyle: 'italic' },
+    plumbobContainer: { alignItems: 'center', justifyContent: 'center', marginVertical: 20 },
+    plumbobDiamond: {},
+    heroFooter: { width: '100%', alignItems: 'flex-end', marginTop: 10 },
+    vitalityPercentage: { fontSize: 32, fontWeight: '800', color: THEME.colors.primary },
     vitalitySubtext: { fontSize: 12, color: THEME.colors.onSurfaceVariant },
-
-    // Bento Metrics
     metricsGrid: { marginTop: THEME.spacing.lg },
-    metricCard: {
-        backgroundColor: THEME.colors.white,
-        borderRadius: THEME.radius.lg,
-        padding: THEME.spacing.lg,
-        marginBottom: THEME.spacing.md,
-        minHeight: 200,
-        justifyContent: 'space-between',
-        ...THEME.shadows.editorial,
-    },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-    iconBox: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-    badge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
-    badgeText: { fontSize: 10, fontWeight: '800' },
-    metricValue: { fontSize: 36, fontWeight: '800', color: THEME.colors.onSurface },
-    metricLabel: { fontSize: 14, color: THEME.colors.onSurfaceVariant },
-    miniProgressBar: {
-        height: 6, backgroundColor: THEME.colors.surfaceContainerHigh,
-        borderRadius: 3, marginTop: THEME.spacing.md, overflow: 'hidden'
-    },
-    miniProgressFill: { height: '100%', borderRadius: 3 },
-
-    // Inspiration Section
-    inspirationCard: {
-        backgroundColor: THEME.colors.primary + '10',
-        borderRadius: THEME.radius.lg,
-        padding: THEME.spacing.xl,
-        marginTop: THEME.spacing.lg,
-    },
+    checkinWrapper: { width: '100%', alignItems: 'center', marginBottom: 16 },
+    checkinButtonWrap: { width: '100%' },
+    checkinButton: { backgroundColor: THEME.colors.primary, paddingVertical: 16, paddingHorizontal: 20, borderRadius: 28, alignItems: 'center' },
+    checkinText: { color: THEME.colors.white, fontWeight: '800', textAlign: 'center', fontSize: 16 },
+    checkinLocked: { width: '100%', alignItems: 'center', backgroundColor: '#eef0eb', padding: 16, borderRadius: 20 },
+    checkinLockedTextRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 8 },
+    checkinLockedText: { color: THEME.colors.onSurfaceVariant, fontWeight: '600' },
+    checkinLockedTimer: { color: THEME.colors.primary, fontWeight: '800' },
+    progressBarBackground: { width: '100%', height: 6, backgroundColor: THEME.colors.surfaceContainerHigh, borderRadius: 6, overflow: 'hidden' },
+    progressBarFill: { height: '100%', backgroundColor: THEME.colors.primary },
+    inspirationCard: { backgroundColor: THEME.colors.primary + '10', borderRadius: THEME.radius.lg, padding: THEME.spacing.xl, marginTop: THEME.spacing.lg },
     inspirationTitle: { fontSize: 24, fontWeight: '800', color: THEME.colors.primary },
-    inspirationBody: {
-        fontSize: 16, color: THEME.colors.secondary,
-        lineHeight: 24, marginVertical: THEME.spacing.md
-    },
-    primaryButton: {
-        backgroundColor: THEME.colors.primary,
-        paddingVertical: THEME.spacing.md,
-        paddingHorizontal: THEME.spacing.xl,
-        borderRadius: THEME.radius.full,
-        alignSelf: 'flex-start'
-    },
+    inspirationBody: { fontSize: 16, color: THEME.colors.secondary, lineHeight: 24, marginVertical: THEME.spacing.md },
+    primaryButton: { backgroundColor: THEME.colors.primary, paddingVertical: THEME.spacing.md, paddingHorizontal: THEME.spacing.xl, borderRadius: THEME.radius.full, alignSelf: 'flex-start' },
     buttonText: { color: THEME.colors.white, fontWeight: '700' },
-
-    // Bottom Nav
-    bottomNav: {
-        position: 'absolute', bottom: 0, width: '100%', height: 90,
-        backgroundColor: 'rgba(249, 250, 246, 0.95)',
-        flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
-        paddingBottom: Platform.OS === 'ios' ? 20 : 0,
-        borderTopLeftRadius: 30, borderTopRightRadius: 30,
-        ...THEME.shadows.editorial
-    },
-    navItem: { alignItems: 'center', padding: 10 },
-    navItemActive: { backgroundColor: THEME.colors.primaryContainer + '40', borderRadius: 25, paddingHorizontal: 15 },
-    navLabel: { fontSize: 11, fontWeight: '600', marginTop: 4, color: THEME.colors.secondary },
-    // This wraps the value, label, and progress bar in the Metric cards
-    cardBottom: {
-        marginTop: THEME.spacing.lg,
-        gap: THEME.spacing.xs, // Modern RN support for gap, otherwise use margin
-    },
-
-    // This ensures the text inside the inspiration section takes up 
-    // the correct space and aligns with the button
-    inspirationTextContent: {
-        flex: 1,
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-    },
+    inspirationTextContent: { flex: 1, alignItems: 'flex-start', justifyContent: 'center' },
 });
 
 export default HomeScreen;

@@ -20,6 +20,11 @@ const VIBE_CONFIG = {
         color: THEME.colors.strongAccent,
         label: 'Calorie Count',
     },
+    screenTime: {
+        Icon: NutritionIcon,
+        color: THEME.colors.strongAccent,
+        label: 'Screen Time',
+    },
     heart: {
         Icon: HeartIcon,
         color: '#ba1a1a',

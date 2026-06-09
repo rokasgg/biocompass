@@ -14,22 +14,31 @@ export interface ActivityData {
 }
 
 export interface StatsSlice {
-    // Duomenys
+    // Esami Duomenys
     stats: BreathingStats;
-    screenTime: number; // minutėmis per dieną
+    screenTime: number;
     sleep: {
         hours: number;
-        quality: string; // 'Good', 'Bad', 'Average'
+        quality: string;
     };
     activity: ActivityData;
     manifestationCount: number;
 
-    // Veiksmai (Actions)
+    // NAUJA: Check-in būsenos
+    hasCompletedMorningCheckIn: boolean;
+    hasCompletedEveningCheckIn: boolean;
+
+    // Esami Veiksmai (Actions)
     addSession: (type: string, duration: number) => void;
     updateScreenTime: (minutes: number) => void;
     updateActivity: (steps: number, calories: number) => void;
     updateSleep: (hours: number, quality: string) => void;
     incrementManifestation: () => void;
+
+    // NAUJA: Check-in veiksmai
+    completeMorningCheckIn: () => void;
+    completeEveningCheckIn: () => void;
+    resetCheckIns: () => void;
 }
 
 export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set) => ({
@@ -39,6 +48,10 @@ export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set
     sleep: { hours: 0, quality: 'Average' },
     activity: { steps: 0, calories: 0, updatedAt: Date.now() },
     manifestationCount: 0,
+
+    // NAUJA: Check-in pradinės reikšmės
+    hasCompletedMorningCheckIn: false,
+    hasCompletedEveningCheckIn: false,
 
     // VEIKSMAI
     addSession: (type, duration) => set((state: any) => {
@@ -70,4 +83,16 @@ export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set
     incrementManifestation: () => set((state: any) => ({
         manifestationCount: state.manifestationCount + 1
     })),
+
+    // NAUJA: Užfiksuojam ryto check-in sėkmę
+    completeMorningCheckIn: () => set({ hasCompletedMorningCheckIn: true }),
+
+    // NAUJA: Užfiksuojam vakaro check-in sėkmę
+    completeEveningCheckIn: () => set({ hasCompletedEveningCheckIn: true }),
+
+    // NAUJA: Metodas, kurį iškviesi naujos dienos pradžioje, kad kraneliai vėl atsidarytų
+    resetCheckIns: () => set({
+        hasCompletedMorningCheckIn: false,
+        hasCompletedEveningCheckIn: false
+    }),
 });

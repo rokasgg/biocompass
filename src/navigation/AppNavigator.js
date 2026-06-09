@@ -14,6 +14,8 @@ import { useStore } from '../store/useStore';
 import BreathingSessionScreen from "../screens/BreathingSessionScreen";
 import BreathworkGalleryScreen from "../screens/BreathworkGalleryScreen";
 import SignUpScreen from "../screens/authScreens/SignUpScreen";
+import DailyCheckInScreen from "../screens/DailyCheckIn";
+import DailyCheckInEntry from "../screens/DailyCheckInEntry";
 import { supabase } from "../../backend/supabase";
 
 import NewProfileCreationScreen from "../screens/NewProfileCreationScreen";
@@ -185,6 +187,24 @@ export default function AppNavigator() {
 
                             }}
                         />
+                        <Stack.Screen
+                            name="DailyCheckIn"
+                            component={DailyCheckInScreen}
+                            options={{
+                                animation: 'slide_from_left',
+
+                            }}
+                        />
+                        <Stack.Screen
+                            name="DailyCheckInEntry"
+                            component={DailyCheckInEntry}
+                            options={{
+                                animation: 'slide_from_right',
+
+                            }}
+                        />
+
+
                     </Stack.Group>
                     :
                     (

@@ -16,14 +16,7 @@ import { THEME } from '../theme';
 
 const { width, height } = Dimensions.get('window');
 
-interface ModalCompleteProps {
-    points?: number;
-    title?: string;
-    desc?: string;
-    dailyPoints?: string;
-}
-
-const ModalCompleteScreen = ({ points, title, desc, dailyPoints }: ModalCompleteProps) => {
+const ModalComplete2Screen = ({ onClose, title, sub }: { onClose?: () => void; title: string; sub: string }) => {
     const navigation = useNavigation();
 
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -51,22 +44,29 @@ const ModalCompleteScreen = ({ points, title, desc, dailyPoints }: ModalComplete
 
                         {/* Modal Content */}
                         <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>{title || 'Ritual Complete!'}</Text>
-                            <Text style={styles.modalSub}>{desc || 'Your nervous system is now in a restorative state.'}</Text>
-
-                            {points !== undefined && (
-                                <View style={styles.scoreBreakdown}>
-                                    <View>
-                                        <Text style={styles.scoreLabelSmall}>DAILY SCORE</Text>
-                                        <Text style={styles.scoreValueBig}>{dailyPoints || '0'} pts</Text>
-                                    </View>
-                                    <View style={styles.pointsEarnedBadge}>
-                                        <Text style={styles.pointsEarnedText}>{points ? `+${points}` : '+50'} Points</Text>
-                                    </View>
+                            <Text style={styles.modalTitle}>{title || "Data Gathered!"}</Text>
+                            <Text style={styles.modalSub}>{sub || "First step is done, now it's time to relax!"}</Text>
+                            {/* 
+                            <View style={styles.scoreBreakdown}>
+                                <View>
+                                    <Text style={styles.scoreLabelSmall}>DAILY SCORE</Text>
+                                    <Text style={styles.scoreValueBig}>2,450 pts</Text>
                                 </View>
-                            )}
+                                <View style={styles.pointsEarnedBadge}>
+                                    <Text style={styles.pointsEarnedText}>+50 Points</Text>
+                                </View>
+                            </View> */}
 
-                            <TouchableOpacity onPress={() => navigation.goBack()}>
+                            <TouchableOpacity onPress={() => {
+                                // play a slower exit animation, then call onClose/navigation
+                                Animated.parallel([
+                                    Animated.timing(fadeAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
+                                    Animated.timing(slideAnim, { toValue: height, duration: 800, useNativeDriver: true }),
+                                ]).start(() => {
+                                    if (onClose) return onClose();
+                                    (navigation as any).navigate('MainTabs', { screen: 'Home' });
+                                });
+                            }}>
                                 <LinearGradient colors={[THEME.colors.primary, THEME.colors.primaryContainer]} style={styles.finishBtn}>
                                     <Text style={styles.finishBtnText}>Finish</Text>
                                 </LinearGradient>
@@ -102,4 +102,4 @@ const styles = StyleSheet.create({
     finishBtnText: { color: 'white', fontSize: 18, fontWeight: '800' },
 });
 
-export default ModalCompleteScreen;
+export default ModalComplete2Screen;

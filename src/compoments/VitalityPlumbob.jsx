@@ -5,13 +5,11 @@ import { THEME } from '../theme';
 
 const VitalityPlumbob = ({ score = 0, isLoading = false }) => {
     const spinValue = useRef(new Animated.Value(0)).current;
-
-    // Šis state kontroliuos, kada "įjungti" spalvą
     const [isDecided, setIsDecided] = useState(false);
 
     useEffect(() => {
         if (isLoading) {
-            setIsDecided(false); // Kol kraunasi, spalva pilka
+            setIsDecided(false);
             Animated.loop(
                 Animated.timing(spinValue, {
                     toValue: 1,
@@ -21,7 +19,6 @@ const VitalityPlumbob = ({ score = 0, isLoading = false }) => {
                 })
             ).start();
         } else {
-            // Settle animacija
             Animated.timing(spinValue, {
                 toValue: 2.125,
                 duration: 3000,
@@ -29,8 +26,6 @@ const VitalityPlumbob = ({ score = 0, isLoading = false }) => {
                 useNativeDriver: true,
             }).start();
 
-            // Svarbu: spalvą "įžiebiame" ne iškart, o pvz. po 400ms, 
-            // kai sukimasis pradeda lėtėti. Atrodo labai natūraliai.
             const timer = setTimeout(() => setIsDecided(true), 400);
             return () => clearTimeout(timer);
         }
@@ -41,12 +36,13 @@ const VitalityPlumbob = ({ score = 0, isLoading = false }) => {
         outputRange: ['0deg', '270deg'],
     });
 
-    // Nustatome spalvą: jei dar kraunasi ARBA dar "neapsisprendė" - pilka
+    // 🎨 GRĄŽINTA: Klasikinė raudona/geltona/žalia sistema, pritaikyta procentams
     const getVibeColor = () => {
-        if (isLoading || !isDecided) return THEME.colors.outlineVariant;
-        if (score >= 80) return THEME.colors.primary;
-        if (score >= 50) return '#EAB308';
-        return THEME.colors.error;
+        if (isLoading || !isDecided) return THEME.colors.outlineVariant; // Pilka, kol kraunasi
+
+        if (score >= 70) return THEME.colors.primary; // 🟢 ŽALIA (Tavo pagrindinė spalva, kai viskas super)
+        if (score >= 40) return '#EAB308';           // 🟡 GELTONA (Vidutiniokas, reikia pasitempti)
+        return THEME.colors.error;                   // 🔴 RAUDONA (Šlykšti diena, ekrano laikas per didelis)
     };
 
     const activeColor = getVibeColor();
@@ -56,7 +52,7 @@ const VitalityPlumbob = ({ score = 0, isLoading = false }) => {
             <Animated.View style={{ transform: [{ rotateY: spin }] }}>
                 <Svg width="100" height="180" viewBox="0 0 120 200">
                     <Defs>
-                        <LinearGradient id="plumbobGrad" x1="0" y1="0" x2="1" y2="1">
+                        <LinearGradient id={`plumbobGrad-${activeColor}`} x1="0" y1="0" x2="1" y2="1">
                             <Stop offset="0" stopColor={activeColor} stopOpacity={1} />
                             <Stop offset="1" stopColor={activeColor} stopOpacity={0.6} />
                         </LinearGradient>
@@ -64,7 +60,7 @@ const VitalityPlumbob = ({ score = 0, isLoading = false }) => {
 
                     <Path
                         d="M60 0 L120 100 L60 125 L0 100 Z"
-                        fill="url(#plumbobGrad)"
+                        fill={`url(#plumbobGrad-${activeColor})`}
                     />
 
                     <Path
@@ -72,12 +68,6 @@ const VitalityPlumbob = ({ score = 0, isLoading = false }) => {
                         fill={activeColor}
                         opacity={0.8}
                     />
-                    {/* 
-                    <Path
-                        d="M60 0 L60 125 L120 100 Z"
-                        fill="black"
-                        opacity={0.15}
-                    /> */}
                 </Svg>
             </Animated.View>
         </View>
