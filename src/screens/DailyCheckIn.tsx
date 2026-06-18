@@ -41,7 +41,13 @@ const DailyCheckIn = () => {
     }, []);
 
     if (isLoading) {
-        return <BioLoader />;
+        return (
+            <SafeAreaView style={{ flex: 1 }}>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <BioLoader />
+                </View>
+            </SafeAreaView>
+        );
     }
     //     if (!users.length) {
     //   return <Text>No users found</Text>;

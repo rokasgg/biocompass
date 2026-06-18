@@ -11,6 +11,7 @@ import {
     TextInput,
     Animated,
     Easing,
+    Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -18,11 +19,15 @@ import { THEME } from '../theme';
 import BioLoader from '../compoments/BioLoader';
 import Slider from '@react-native-community/slider';
 import { useStore } from '../store/useStore';
+import Check from '../../assets/icons/Check';
+import { checkInService } from '@backend/services/checkInService';
+import { supabase } from '@backend/supabase';
+
 
 const { width } = Dimensions.get('window');
 
 const DailyCheckInEntry = () => {
-    const navigation = navigation || useNavigation();
+    const navigation = useNavigation();
     const route = useRoute();
 
     const phaseParam = (route.params as any)?.phase;
@@ -44,6 +49,19 @@ const DailyCheckInEntry = () => {
     const [hitGym, setHitGym] = useState(false);
 
     const dropAnim = useRef(new Animated.Value(0)).current;
+    const [showConfirm, setShowConfirm] = useState(false);
+
+    const handleBackPress = () => {
+        if (step > 1) setStep((s) => s - 1);
+        else setShowConfirm(true);
+    };
+
+    const confirmLeave = () => {
+        setShowConfirm(false);
+        (navigation as any).goBack();
+    };
+
+    const cancelLeave = () => setShowConfirm(false);
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 400);
@@ -60,59 +78,62 @@ const DailyCheckInEntry = () => {
         }).start();
     }, [step]);
 
-    if (isLoading) return <BioLoader />;
+    if (isLoading) return (
+        <SafeAreaView style={{ flex: 1 }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <BioLoader />
+            </View>
+        </SafeAreaView>
+    );
 
     // Dinamiškai nustatom maksimalų žingsnių skaičių pagal fazę
     const maxSteps = currentPhase === 'morning' ? 2 : 3;
 
     // --- SUBMIT LOGIKA ---
-    const handleSubmitCheckIn = () => {
-        let pointsEarned = 0;
-        const globalStore = useStore.getState() as any;
 
-        if (currentPhase === 'morning') {
-            pointsEarned += 15; // Miego bonusas fone
-            if (drankWater) pointsEarned += 5;
-            if (meditated) pointsEarned += 10;
-            if (paidCompliment) pointsEarned += 5;
+    const handleSubmitCheckIn = async () => {
+        setIsLoading(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Vartotojas nerastas");
 
-            if (globalStore.completeMorningCheckIn) globalStore.completeMorningCheckIn();
-        } else {
-            pointsEarned += 15; // Žingsnių bonusas fone
-            if (noSugar) pointsEarned += 10;
-            if (stretched) pointsEarned += 10;
-            if (hitGym) pointsEarned += 15;
+            // Formuojame objektą pagal tai, kokioje fazėje esame
+            const payload = currentPhase === 'morning' ? {
+                morning_focus: todayFocus,
+                drank_water: drankWater,
+                meditated: meditated,
+                paid_compliment: paidCompliment
+            } : {
+                screen_hours: screenHours,
+                digital_fatigue: emojiIndex,
+                no_sugar: noSugar,
+                stretched: stretched,
+                hit_gym: hitGym
+            };
 
-            if (screenHours <= 2) pointsEarned += 15;
-            else if (screenHours > 5) pointsEarned -= 20;
+            // Siunčiame į servisą
+            await checkInService.submitDailyMetrics(user.id, payload);
 
-            if (globalStore.updateScreenTime) {
-                globalStore.updateScreenTime(Math.round(screenHours * 60));
-            }
+            // Viskas pavyko, einame toliau
+            navigation.replace('BreathingSession', {
+                duration: 60,
+                fromCheckIn: true,
+                breathingType: currentPhase === 'morning' ? 'focus' : 'sleep'
+            });
 
-            if (globalStore.completeEveningCheckIn) globalStore.completeEveningCheckIn();
+        } catch (err) {
+            console.error("Check-in klaida:", err);
+            alert("Nepavyko išsaugoti. Bandyk dar kartą.");
+        } finally {
+            setIsLoading(false);
         }
-
-        // Įrašom taškus
-        useStore.setState((state: any) => ({
-            score: (state.score || 0) + pointsEarned
-        }));
-
-        const targetBreathingType = currentPhase === 'morning' ? 'focus' : 'sleep';
-
-        // Keliaujam į kvėpavimą
-        (navigation as any).replace('BreathingSession', {
-            duration: 60,
-            fromCheckIn: true,
-            breathingType: targetBreathingType
-        });
     };
 
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
                     <Text style={styles.backArrow}>← Back</Text>
                 </TouchableOpacity>
 
@@ -156,17 +177,20 @@ const DailyCheckInEntry = () => {
                             {step === 2 && (
                                 <View style={styles.card}>
                                     <Text style={styles.overline}>STEP 2 OF 2</Text>
-                                    <Text style={styles.title}>Morning Habits 💧</Text>
+                                    <Text style={styles.title}>Morning Habits</Text>
                                     <Text style={styles.subtitle}>Check items you have already unlocked this morning:</Text>
                                     <View style={styles.checkboxContainer}>
                                         <TouchableOpacity style={[styles.checkboxRow, drankWater && styles.checkboxActive]} onPress={() => setDrankWater(!drankWater)}>
-                                            <Text style={styles.checkboxText}>{drankWater ? "✅" : "⬜"} Drank a fresh glass of water (+5 pts)</Text>
+                                            <Check width={18} height={18} color={drankWater ? THEME.colors.primary : '#7e8085ff'} />
+                                            <Text style={[styles.checkboxText, { marginLeft: 12 }]}>Drank a fresh glass of water (+5 pts)</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity style={[styles.checkboxRow, meditated && styles.checkboxActive]} onPress={() => setMeditated(!meditated)}>
-                                            <Text style={styles.checkboxText}>{meditated ? "✅" : "⬜"} Spent time meditating (+10 pts)</Text>
+                                            <Check width={18} height={18} color={meditated ? THEME.colors.primary : '#7e8085ff'} />
+                                            <Text style={[styles.checkboxText, { marginLeft: 12 }]}>Spent time meditating (+10 pts)</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity style={[styles.checkboxRow, paidCompliment && styles.checkboxActive]} onPress={() => setPaidCompliment(!paidCompliment)}>
-                                            <Text style={styles.checkboxText}>{paidCompliment ? "✅" : "⬜"} Planned/paid a warm compliment (+5 pts)</Text>
+                                            <Check width={18} height={18} color={paidCompliment ? THEME.colors.primary : '#7e8085ff'} />
+                                            <Text style={[styles.checkboxText, { marginLeft: 12 }]}>Planned/paid a warm compliment (+5 pts)</Text>
                                         </TouchableOpacity>
                                     </View>
                                 </View>
@@ -250,13 +274,16 @@ const DailyCheckInEntry = () => {
                                     <Text style={styles.subtitle}>Mark the healthy choices you managed to secure for your body today:</Text>
                                     <View style={styles.checkboxContainer}>
                                         <TouchableOpacity style={[styles.checkboxRow, noSugar && styles.checkboxActive]} onPress={() => setNoSugar(!noSugar)}>
-                                            <Text style={styles.checkboxText}>{noSugar ? "✅" : "⬜"} Avoided added sugar (+10 pts)</Text>
+                                            <Check width={18} height={18} color={noSugar ? THEME.colors.primary : '#7e8085ff'} />
+                                            <Text style={[styles.checkboxText, { marginLeft: 12 }]}>Avoided added sugar (+10 pts)</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity style={[styles.checkboxRow, stretched && styles.checkboxActive]} onPress={() => setStretched(!stretched)}>
-                                            <Text style={styles.checkboxText}>{stretched ? "✅" : "⬜"} Done body stretching (+10 pts)</Text>
+                                            <Check width={18} height={18} color={stretched ? THEME.colors.primary : '#7e8085ff'} />
+                                            <Text style={[styles.checkboxText, { marginLeft: 12 }]}>Done body stretching (+10 pts)</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity style={[styles.checkboxRow, hitGym && styles.checkboxActive]} onPress={() => setHitGym(!hitGym)}>
-                                            <Text style={styles.checkboxText}>{hitGym ? "✅" : "⬜"} Hit the gym / intense workout (+15 pts)</Text>
+                                            <Check width={18} height={18} color={hitGym ? THEME.colors.primary : '#7e8085ff'} />
+                                            <Text style={[styles.checkboxText, { marginLeft: 12 }]}>Hit the gym / intense workout (+15 pts)</Text>
                                         </TouchableOpacity>
                                     </View>
                                 </View>
@@ -265,6 +292,22 @@ const DailyCheckInEntry = () => {
                     )}
 
                 </Animated.View>
+                <Modal visible={showConfirm} transparent animationType="fade" onRequestClose={cancelLeave}>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContainer}>
+                            <Text style={styles.modalTitle}>Leave {currentPhase === 'morning' ? 'Morning' : 'Evening'} Check‑in?</Text>
+                            <Text style={styles.modalMessage}>Are you sure you want to leave the {currentPhase} check‑in? Your progress will not be saved.</Text>
+                            <View style={styles.modalButtons}>
+                                <TouchableOpacity onPress={cancelLeave} style={[styles.modalButton, { backgroundColor: '#F1F5F9' }]}>
+                                    <Text style={[styles.modalButtonText, { color: THEME.colors.onSurface }]}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={confirmLeave} style={[styles.modalButton, { backgroundColor: THEME.colors.primary }]}>
+                                    <Text style={[styles.modalButtonText, { color: '#fff' }]}>Leave</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
                 <View style={{ height: 100 }} />
             </ScrollView>
 
@@ -299,7 +342,7 @@ const styles = StyleSheet.create({
     subtitle: { fontSize: 15, color: THEME.colors.onSurfaceVariant, lineHeight: 22, marginBottom: 20 },
     textInput: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 16, padding: 16, fontSize: 16, color: THEME.colors.onSurface, minHeight: 120, textAlignVertical: 'top', marginTop: 10 },
     checkboxContainer: { gap: 10, marginTop: 10 },
-    checkboxRow: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', padding: 16, borderRadius: 16 },
+    checkboxRow: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', padding: 16, borderRadius: 16, flexDirection: 'row', alignItems: 'center' },
     checkboxActive: { borderColor: THEME.colors.primary, backgroundColor: THEME.colors.primary + '08' },
     checkboxText: { fontSize: 14, fontWeight: '600', color: THEME.colors.onSurface },
     sliderContainer: { marginTop: 20, alignItems: 'center' },
@@ -318,6 +361,14 @@ const styles = StyleSheet.create({
     introBadge: { backgroundColor: THEME.colors.primary + '12', padding: 14, borderRadius: 12, marginTop: 10 },
     introBadgeText: { color: THEME.colors.primary, fontWeight: '700', fontSize: 13, textAlign: 'center' },
     emojiExplainer: { textAlign: 'center', marginTop: 16, fontSize: 14, color: THEME.colors.onSurfaceVariant, fontWeight: '600' }
+    ,
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(2,6,23,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+    modalContainer: { width: '100%', maxWidth: 420, backgroundColor: '#fff', borderRadius: 14, padding: 20 },
+    modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 8, color: THEME.colors.onSurface },
+    modalMessage: { fontSize: 14, color: THEME.colors.onSurfaceVariant, marginBottom: 18 },
+    modalButtons: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
+    modalButton: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10 },
+    modalButtonText: { fontSize: 15, fontWeight: '800' }
 });
 
 export default DailyCheckInEntry;

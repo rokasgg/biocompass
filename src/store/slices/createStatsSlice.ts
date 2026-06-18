@@ -28,6 +28,9 @@ export interface StatsSlice {
     hasCompletedMorningCheckIn: boolean;
     hasCompletedEveningCheckIn: boolean;
 
+    lastActiveDate: string | null;
+    checkAndResetDaily: () => void;
+
     // Esami Veiksmai (Actions)
     addSession: (type: string, duration: number) => void;
     updateScreenTime: (minutes: number) => void;
@@ -52,6 +55,8 @@ export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set
     // NAUJA: Check-in pradinės reikšmės
     hasCompletedMorningCheckIn: false,
     hasCompletedEveningCheckIn: false,
+
+    lastActiveDate: null,
 
     // VEIKSMAI
     addSession: (type, duration) => set((state: any) => {
@@ -94,5 +99,21 @@ export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set
     resetCheckIns: () => set({
         hasCompletedMorningCheckIn: false,
         hasCompletedEveningCheckIn: false
+    }),
+
+    checkAndResetDaily: () => set((state: any) => {
+        const today = new Date().toDateString(); // Pvz: "Wed Jun 10 2026"
+
+        // Jei data sutampa, nieko nedarom
+        if (state.lastActiveDate === today) return {};
+
+        // Jei nesutampa – prasidėjo nauja diena! Resetinam flag'us ir dienos counterius
+        return {
+            lastActiveDate: today,
+            hasCompletedMorningCheckIn: false,
+            hasCompletedEveningCheckIn: false,
+            screenTime: 0, // Nauja diena – naujas ekrano laikas
+            // čia galėsi resetinti ir kitus dienos habitus, jei reikės
+        };
     }),
 });

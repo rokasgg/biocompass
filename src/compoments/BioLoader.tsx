@@ -1,7 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, ActivityIndicator, Text } from 'react-native';
 import { THEME } from '../theme';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 type BioLoaderProps = {
   message?: string;

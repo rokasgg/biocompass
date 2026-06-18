@@ -22,29 +22,63 @@ import {
     useStatisticsForQuantity,
     queryCategorySamples,
 } from '@kingstinct/react-native-healthkit';
+import { checkInService } from '@backend/services/checkInService';
+import { supabase } from '@backend/supabase';
+import { useFocusEffect } from '@react-navigation/native';
+import CheckInTimer from 'src/compoments/CheckInTimer';
 
 const { width } = Dimensions.get('window');
-
+const STATS_OPTIONS: ('cumulativeSum')[] = ['cumulativeSum'];
 const HomeScreen = () => {
     // 1. Išsitraukiam iš Store, ar checkinai jau padaryti!
     // (Pridėk juos į savo store. Jei dar nepridėjai, kol kas gali naudoti useState testavimui)
     const score = useStore((state) => state.score);
-    const screenTimeMinutes = useStore(state => state.screenTime);
-    const hasCompletedMorningCheckIn = useStore((state) => (state as any).hasCompletedMorningCheckIn || false);
-    const hasCompletedEveningCheckIn = useStore((state) => (state as any).hasCompletedEveningCheckIn || false);
+
+
 
     const navigation = useNavigation();
     const [error, setError] = useState<string | null>(null);
     const [isAuthorized, setIsAuthorized] = useState(false);
-    const [now, setNow] = useState(new Date());
+
     const pulse = useRef(new Animated.Value(1)).current;
 
+    const checkAndResetDaily = useStore(state => (state as any).checkAndResetDaily);
+
+
+    const [totalScore, setTotalScore] = useState<number>(0);
+    const [dailyScore, setDailyScore] = useState<number>(0);
+    const [screenTimeMinutes, setScreenTimeMinutes] = useState<number>(0);
+    const [hasCompletedMorningCheckIn, setHasCompletedMorningCheckIn] = useState<boolean>(false);
+    const [hasCompletedEveningCheckIn, setHasCompletedEveningCheckIn] = useState<boolean>(false);
+    const [isLoadingDb, setIsLoadingDb] = useState<boolean>(true);
+
+    const loadData = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const data = await checkInService.getUserDashboardData(user.id);
+            console.log("Gauti duomenys iš checkInService:", data);
+            // setTotalScore(data.totalScore);
+            setDailyScore(data.todayMetrics?.daily_score || 0);
+        }
+        setIsLoadingDb(false);
+    };
+
+
+
     useEffect(() => {
-        const t = setInterval(() => setNow(new Date()), 1000);
-        return () => clearInterval(t);
+        console.log("Fire1");
+        loadData();
     }, []);
 
     useEffect(() => {
+        checkAndResetDaily();
+        console.log("Fire2");
+    }, []);
+
+
+
+    useEffect(() => {
+        console.log("Fire4");
         const requestHealthKitPermissions = async () => {
             try {
                 const authorized = await requestAuthorization({
@@ -70,7 +104,7 @@ const HomeScreen = () => {
     }, []);
 
     // --- DIENOS FAZIŲ IR MYGTUKŲ RODYMO LOGIKA ---
-    const currentHour = now.getHours();
+    const currentHour = new Date().getHours();
     const isMorningPhase = currentHour >= 6 && currentHour < 17;
     const isEveningPhase = currentHour >= 17 && currentHour < 24;
     const isNightPhase = currentHour >= 0 && currentHour < 6;
@@ -82,37 +116,45 @@ const HomeScreen = () => {
     // Jei nerodom jokio mygtuko, reiškia esam "Užrakintame / Laukimo" režime
     const isCheckinLocked = !showMorningButton && !showEveningButton;
 
-    // Apskaičiuojam koks bus Kitas Checkinas, kurio laukiam
-    const nextCheckinTargetDate = useMemo(() => {
-        const target = new Date(now);
-
-        if (isMorningPhase && hasCompletedMorningCheckIn) {
-            // Laukiam vakaro (17:00)
-            target.setHours(17, 0, 0, 0);
-        } else if ((isEveningPhase && hasCompletedEveningCheckIn) || isNightPhase) {
-            // Laukiam rytojaus (06:00)
-            if (isEveningPhase) {
-                target.setDate(target.getDate() + 1);
-            }
-            target.setHours(6, 0, 0, 0);
-        }
-        return target;
-    }, [now, isMorningPhase, isEveningPhase, isNightPhase, hasCompletedMorningCheckIn, hasCompletedEveningCheckIn]);
-
-    const lockedRemainingMs = Math.max(nextCheckinTargetDate.getTime() - now.getTime(), 0);
-
-    // Koks tekstas bus laukimo ekranėlyje
-    const lockedMessageText = useMemo(() => {
-        if (isMorningPhase && hasCompletedMorningCheckIn) return "Evening check-in unlocks in";
-        if (isEveningPhase && hasCompletedEveningCheckIn) return "Morning check-in unlocks in";
-        if (isNightPhase) return "Morning check-in unlocks in";
-        return "Check-in unlocks in";
-    }, [isMorningPhase, isEveningPhase, isNightPhase, hasCompletedMorningCheckIn, hasCompletedEveningCheckIn]);
+    const maxAvailableScore = isMorningPhase ? 35 : 100;
+    const vitalityPercentage = Math.min(Math.round((dailyScore / maxAvailableScore) * 100), 100);
 
 
-    // Deimantuko matematika (priklauso nuo fazės)
-    const maxAvailableScore = isMorningPhase ? 40 : 100;
-    const vitalityPercentage = Math.min(Math.round((score / maxAvailableScore) * 100), 100);
+    useFocusEffect(
+        React.useCallback(() => {
+            console.log("Fire7");
+            const fetchDbData = async () => {
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
+
+                    const data = await checkInService.getUserDashboardData(user.id);
+
+                    // Supildom gautus duomenis iš Supabase
+                    // setTotalScore(data.totalScore);
+                    setDailyScore(data.todayMetrics?.daily_score || 0);
+
+                    // Konvertuojam ekrano valandas atgal į minutes, kad Bento grid'as suprastų
+                    const hours = data.todayMetrics?.screen_hours || 0;
+                    setScreenTimeMinutes(Math.round(hours * 60));
+
+                    // Protingai nustatom ar check-in atlikti (tikrinam ar yra įrašai bazėje)
+                    setHasCompletedMorningCheckIn(!!data.todayMetrics?.morning_focus);
+
+                    // Vakaro check-in skaitom kaip atliktą, jei jau yra įvestos ekrano valandos (net jei jos 0)
+                    setHasCompletedEveningCheckIn(data.todayMetrics?.screen_hours !== null && data.todayMetrics?.screen_hours !== undefined);
+
+                } catch (err) {
+                    console.error("Nepavyko užkrauti duomenų iš DB:", err);
+                } finally {
+                    setIsLoadingDb(false);
+                }
+            };
+
+            fetchDbData();
+        }, [])
+    );
+
 
     useEffect(() => {
         if (!isCheckinLocked) {
@@ -130,7 +172,7 @@ const HomeScreen = () => {
     // --- HEALTHKIT DATA ---
     const stats = useStatisticsForQuantity(
         'HKQuantityTypeIdentifierStepCount',
-        ['cumulativeSum'],
+        STATS_OPTIONS,
         start,
         end
     );
@@ -188,23 +230,15 @@ const HomeScreen = () => {
                                     onPress={() => (navigation as any).navigate('DailyCheckInEntry', { phase: showMorningButton ? 'morning' : 'evening' })}
                                 >
                                     <Text style={styles.checkinText}>
-                                        {showMorningButton ? "☀️ Complete Morning Check-in" : "🌙 Complete Evening Check-in"}
+                                        {showMorningButton ? "Complete Morning Check-in" : "🌙 Complete Evening Check-in"}
                                     </Text>
                                 </TouchableOpacity>
                             </Animated.View>
                         ) : (
-                            <View style={styles.checkinLocked}>
-                                <View style={styles.checkinLockedTextRow}>
-                                    <Text style={styles.checkinLockedText}>{lockedMessageText}</Text>
-                                    <Text style={styles.checkinLockedTimer}>
-                                        {new Date(lockedRemainingMs).toISOString().substr(11, 8)}
-                                    </Text>
-                                </View>
-                                {/* Paimtas statinis fonas, be judančio progress baro, kad neapkrautų UX kai laukiama ilgai */}
-                                <View style={styles.progressBarBackground}>
-                                    <View style={[styles.progressBarFill, { width: '100%', backgroundColor: THEME.colors.surfaceContainerHigh }]} />
-                                </View>
-                            </View>
+                            <CheckInTimer
+                                hasCompletedMorningCheckIn={hasCompletedMorningCheckIn}
+                                hasCompletedEveningCheckIn={hasCompletedEveningCheckIn}
+                            />
                         )}
                     </View>
 
@@ -273,10 +307,7 @@ const styles = StyleSheet.create({
     checkinButtonWrap: { width: '100%' },
     checkinButton: { backgroundColor: THEME.colors.primary, paddingVertical: 16, paddingHorizontal: 20, borderRadius: 28, alignItems: 'center' },
     checkinText: { color: THEME.colors.white, fontWeight: '800', textAlign: 'center', fontSize: 16 },
-    checkinLocked: { width: '100%', alignItems: 'center', backgroundColor: '#eef0eb', padding: 16, borderRadius: 20 },
-    checkinLockedTextRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 8 },
-    checkinLockedText: { color: THEME.colors.onSurfaceVariant, fontWeight: '600' },
-    checkinLockedTimer: { color: THEME.colors.primary, fontWeight: '800' },
+
     progressBarBackground: { width: '100%', height: 6, backgroundColor: THEME.colors.surfaceContainerHigh, borderRadius: 6, overflow: 'hidden' },
     progressBarFill: { height: '100%', backgroundColor: THEME.colors.primary },
     inspirationCard: { backgroundColor: THEME.colors.primary + '10', borderRadius: THEME.radius.lg, padding: THEME.spacing.xl, marginTop: THEME.spacing.lg },

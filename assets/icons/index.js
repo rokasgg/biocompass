@@ -33,6 +33,8 @@ import SparkleIcon from './sparkle.svg';
 import NotimeIcon from './notime.svg';
 import FlowerIcon from './flower.svg';
 import LeafFilledIcon from './LEAFS.svg';
+import Check from './Check';
+
 
 export {
     SleepIcon,
@@ -67,5 +69,7 @@ export {
     EmailIcon,
     SparkleIcon,
     NotimeIcon,
-    LeafFilledIcon
+    LeafFilledIcon,
+    Check,
+    // CheckBox
 };
