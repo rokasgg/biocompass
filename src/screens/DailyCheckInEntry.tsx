@@ -22,6 +22,11 @@ import { useStore } from '../store/useStore';
 import Check from '../../assets/icons/Check';
 import { checkInService } from '@backend/services/checkInService';
 import { supabase } from '@backend/supabase';
+import Face1 from '../../assets/icons/face1.svg';
+import Face2 from '../../assets/icons/face2.svg';
+import Face3 from '../../assets/icons/face3.svg';
+import Face4 from '../../assets/icons/face4.svg';
+import Face5 from '../../assets/icons/face5.svg';
 
 
 const { width } = Dimensions.get('window');
@@ -67,6 +72,10 @@ const DailyCheckInEntry = () => {
         const timer = setTimeout(() => setIsLoading(false), 400);
         return () => clearTimeout(timer);
     }, []);
+
+    useEffect(() => {
+        navigation.setOptions({ gestureEnabled: step === 0 });
+    }, [step, navigation]);
 
     useEffect(() => {
         dropAnim.setValue(-30);
@@ -128,6 +137,8 @@ const DailyCheckInEntry = () => {
             setIsLoading(false);
         }
     };
+
+
 
     return (
         <SafeAreaView style={styles.container}>
@@ -249,18 +260,19 @@ const DailyCheckInEntry = () => {
                             {step === 2 && (
                                 <View style={styles.card}>
                                     <Text style={styles.overline}>STEP 2 OF 3</Text>
-                                    <Text style={styles.title}>Digital Fatigue 🧠</Text>
+                                    <Text style={styles.title}>Digital Fatigue</Text>
                                     <Text style={styles.subtitle}>How is your brain feeling after today's total scrolling and digital exposure?</Text>
                                     <View style={{ marginTop: 20 }}>
                                         <View style={styles.emojiRow}>
-                                            {['🧠☠️', '😵', '😕', '🙂', '🧘‍♂️'].map((emoji, idx) => (
+                                            {[<Face5 width={35} height={35} />, <Face4 width={35} height={35} />, <Face3 width={35} height={35} />, <Face2 width={35} height={35} />, <Face1 width={35} height={35} />].map((emoji, idx) => (
                                                 <TouchableOpacity key={idx} style={[styles.emojiBtn, emojiIndex === idx && styles.emojiSelected]} onPress={() => setEmojiIndex(idx)}>
-                                                    <Text style={styles.emojiText}>{emoji}</Text>
+                                                    {/* <Text style={styles.emojiText}>{emoji}</Text> */}
+                                                    {typeof emoji === 'string' ? <Text style={styles.emojiText}>{emoji}</Text> : emoji}
                                                 </TouchableOpacity>
                                             ))}
                                         </View>
                                         <Text style={styles.emojiExplainer}>
-                                            {emojiIndex === 0 ? "Completely fried..." : emojiIndex === 4 ? "Peaceful & controlled" : "Select a state"}
+                                            {emojiIndex === 0 ? "Completely fried..." : emojiIndex === 4 ? "Peaceful & controlled" : emojiIndex === 1 ? "Overwhelmed & stressed" : emojiIndex === 2 ? "Neutral & okay" : emojiIndex === 3 ? "Relaxed & calm" : "Select an emoji to describe your mental state."}
                                         </Text>
                                     </View>
                                 </View>
@@ -322,7 +334,7 @@ const DailyCheckInEntry = () => {
                 ) : (
                     <TouchableOpacity style={styles.footerButton} onPress={handleSubmitCheckIn}>
                         <Text style={styles.buttonText}>
-                            {currentPhase === 'morning' ? "Save & Start Morning Breath ☀️" : "Save & Start Evening Breath 🌙"}
+                            {currentPhase === 'morning' ? "Save & Start Morning Breath ☀️" : "Save & Start Evening Breath"}
                         </Text>
                     </TouchableOpacity>
                 )}

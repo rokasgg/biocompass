@@ -50,35 +50,7 @@ const RitualsScreen = () => {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* --- Hero: Sage Score --- */}
-        <View style={styles.heroSection}>
-          <View style={styles.scoreCircleContainer}>
-            <Svg width={264} height={264} viewBox="0 0 264 264" style={styles.svgRotate}>
-              <Circle
-                cx="132" cy="132" r={radius}
-                stroke={THEME.colors.primaryContainer}
-                strokeWidth="8" fill="transparent"
-              />
-              <AnimatedCircle
-                cx="132" cy="132" r={radius}
-                stroke={THEME.colors.primary}
-                strokeWidth="12" fill="transparent"
-                strokeDasharray={`${circumference} ${circumference}`}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-              />
-            </Svg>
-            <View style={styles.scoreInnerContent}>
-              <Text style={styles.scoreLabel}>CURRENT SCORE</Text>
-              <Text style={styles.scoreValue}>{score}</Text>
-              <View style={styles.scoreDivider} />
-              <Text style={styles.scoreGoal}>{goal} Daily Goal</Text>
-            </View>
-          </View>
-          <Text style={styles.heroSummary}>
-            You're 150 points away from your mindfulness peak today.
-          </Text>
-        </View>
+
 
         {/* --- Bento Grid: Rituals --- */}
         <View style={styles.bentoGrid}>
@@ -134,16 +106,7 @@ const RitualsScreen = () => {
               Consistency is the heartbeat of habit. You've completed your morning rituals for 12 consecutive days.
             </Text>
           </View>
-          <View style={styles.insightImageWrapper}>
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773' }}
-              style={styles.insightImage}
-            />
-            <LinearGradient
-              colors={['transparent', THEME.colors.primary + '60']}
-              style={StyleSheet.absoluteFill}
-            />
-          </View>
+
         </View>
 
       </ScrollView>

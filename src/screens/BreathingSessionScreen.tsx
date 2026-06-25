@@ -254,7 +254,7 @@ const BreathingSessionScreen = () => {
             {/* Ready Overlay */}
             {!isStarted && (
                 <View style={styles.readyOverlay}>
-                    <Text style={styles.readyTitle}>Are you ready to center? 🧘‍♂️</Text>
+                    <Text style={styles.readyTitle}>Are you ready to center?</Text>
                     <Text style={styles.readySub}>
                         Find a comfortable sitting position, relax your shoulders, and prepare for 1 minute of deep conscious breathing.
                     </Text>

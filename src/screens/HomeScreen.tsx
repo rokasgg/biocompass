@@ -107,7 +107,6 @@ const HomeScreen = () => {
     const currentHour = new Date().getHours();
     const isMorningPhase = currentHour >= 6 && currentHour < 17;
     const isEveningPhase = currentHour >= 17 && currentHour < 24;
-    const isNightPhase = currentHour >= 0 && currentHour < 6;
 
     // Ar tikrai rodyti mygtuką? (Fazė aktyvi IR checkinas dar nepadarytas)
     const showMorningButton = isMorningPhase && !hasCompletedMorningCheckIn;
@@ -199,11 +198,42 @@ const HomeScreen = () => {
                     const totalSleepMinutes = Math.floor(totalSleepMs / 60000);
                     const hours = Math.floor(totalSleepMinutes / 60);
                     const minutes = totalSleepMinutes % 60;
+
                     setSleepDisplayText(hours > 0 || minutes > 0 ? `${hours}h ${minutes}m` : "No data");
+
+                    // Generate clean local date string matching your DB format (YYYY-MM-DD)
+                    const year = start.getFullYear();
+                    const month = String(start.getMonth() + 1).padStart(2, '0');
+                    const day = String(start.getDate()).padStart(2, '0');
+                    const todayDateString = `${year}-${month}-${day}`;
+
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        const sleepHoursDecimal = parseFloat((totalSleepMinutes / 60).toFixed(2));
+
+                        // 🚀 Changed .update() to .upsert() so it creates a row if today is empty!
+                        const { error: dbError } = await supabase
+                            .from('daily_metrics') // 👈 Set to your exact table name
+                            .upsert(
+                                {
+                                    user_id: user.id,
+                                    date: todayDateString,
+                                    sleep_hours: sleepHoursDecimal
+                                },
+                                { onConflict: 'user_id,date' } // Prevents duplicating rows if it already exists
+                            );
+
+                        if (dbError) {
+                            console.error("Supabase sync error:", dbError.message);
+                        } else {
+                            console.log(`Successfully synced ${sleepHoursDecimal} sleep hours for ${todayDateString}`);
+                        }
+                    }
                 } else {
                     setSleepDisplayText("No data");
                 }
             } catch (err) {
+                console.error("Failed to fetch or sync sleep data:", err);
                 setSleepDisplayText("Error");
             } finally {
                 setIsLoadingSleep(false);
@@ -266,12 +296,12 @@ const HomeScreen = () => {
                 <View style={styles.metricsGrid}>
                     <MetricCard vibe="steps" value={stepCount.toLocaleString()} badge={isLoadingSteps ? "Loading..." : "Syncing"} progress={Math.min(stepCount / 10000, 1)} />
                     <MetricCard vibe="sleep" value={sleepDisplayText} badge={isLoadingSleep ? "Loading..." : "Rest Tracker"} progress={0.85} />
-                    <MetricCard vibe="screenTime" value={(() => {
+                    {isEveningPhase && screenTimeMinutes && <MetricCard vibe="screenTime" value={(() => {
                         const m = screenTimeMinutes || 0;
                         const h = Math.floor(m / 60);
                         const mm = m % 60;
                         return h > 0 || mm > 0 ? `${h}h ${mm}m` : '0h';
-                    })()} badge={screenTimeMinutes ? 'Manual Input' : '—'} progress={Math.min((screenTimeMinutes || 0) / (12 * 60), 1)} />
+                    })()} badge={screenTimeMinutes ? 'Manual Input' : '—'} progress={Math.min((screenTimeMinutes || 0) / (12 * 60), 1)} />}
                 </View>
 
                 {/* --- Nukreipimo skiltis --- */}

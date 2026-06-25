@@ -200,7 +200,7 @@ export default function AppNavigator() {
                             component={DailyCheckInEntry}
                             options={{
                                 animation: 'slide_from_right',
-
+                                gestureEnabled: false, // Disable swipe back gesture
                             }}
                         />
 
