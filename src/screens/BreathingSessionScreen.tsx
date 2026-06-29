@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { THEME } from '../theme';
-import ModalCompleteScreen from '../compoments/ModalComplete';
+
 import ModalConfirmation from '../compoments/ModalConfirmation';
 import { useStore } from '../store/useStore';
 
@@ -48,7 +48,7 @@ const BreathingSessionScreen = () => {
     const [isRunning, setIsRunning] = useState(false);
 
     const [phase, setPhase] = useState('INHALE');
-    const [phaseDurationSecs, setPhaseDurationSecs] = useState(4);
+    const [phaseCountdown, setPhaseCountdown] = useState(4);
     const [durationSecs] = useState(sessionDuration);
     const [progress, setProgress] = useState(0);
 
@@ -91,7 +91,7 @@ const BreathingSessionScreen = () => {
             if (type === 'inhale') {
                 const remaining = Math.max(0.02, (1.2 - currentValue) / 0.2);
                 setPhase(label);
-                setPhaseDurationSecs(duration / 1000);
+                setPhaseCountdown(duration / 1000);
                 Animated.timing(breatheAnim, {
                     toValue: 1.2,
                     duration: Math.round(duration * remaining),
@@ -102,14 +102,14 @@ const BreathingSessionScreen = () => {
                 });
             } else if (type === 'hold-in' || type === 'hold-out') {
                 setPhase(label);
-                setPhaseDurationSecs(duration / 1000);
+                setPhaseCountdown(duration / 1000);
                 Animated.delay(duration).start(({ finished }) => {
                     if (finished && isRunningRef.current) runPhase(next, currentValue);
                 });
             } else {
                 const remaining = Math.max(0.02, (currentValue - 1.0) / 0.2);
                 setPhase(label);
-                setPhaseDurationSecs(duration / 1000);
+                setPhaseCountdown(duration / 1000);
                 Animated.timing(breatheAnim, {
                     toValue: 1.0,
                     duration: Math.round(duration * remaining),
@@ -139,6 +139,12 @@ const BreathingSessionScreen = () => {
             pulseAnim.stopAnimation();
         };
     }, [isRunning, isStarted]);
+
+    useEffect(() => {
+        if (!isRunning || phaseCountdown <= 0) return;
+        const timer = setTimeout(() => setPhaseCountdown(prev => Math.max(0, prev - 1)), 1000);
+        return () => clearTimeout(timer);
+    }, [isRunning, phaseCountdown]);
 
     // Finišo sekimas (suveikia TIK jei sąžiningai pabaigia kvėpuoti)
     useEffect(() => {
@@ -188,7 +194,11 @@ const BreathingSessionScreen = () => {
     };
 
     const redirectToHome = () => {
-        (navigation as any).navigate('MainTabs', { screen: 'Home' });
+        if (isCompleted) {
+            (navigation as any).navigate('MainTabs', { screen: 'Home' });
+        } else {
+            navigation.goBack();
+        }
     };
 
     const closeModal = () => {
@@ -224,11 +234,6 @@ const BreathingSessionScreen = () => {
         return <ModalConfirmation onConfirm={closeModal} onCancel={keepGoing} />
     }
 
-    // 🌟 Jei isCompleted tampa true – išpina tavo pabaigos modalą!
-    if (isCompleted) {
-        return <ModalCompleteScreen onClose={redirectToHome} />
-    }
-
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: getBgColor() }]}>
             <View style={styles.scrollContent}>
@@ -254,10 +259,10 @@ const BreathingSessionScreen = () => {
                                 style={styles.breatheCore}
                             >
                                 <Text style={[styles.phaseText, { color: '#eae2b4ff' }]}>
-                                    {isStarted ? phase : "READY"}
+                                    {isStarted ? phase : "GO"}
                                 </Text>
                                 <Text style={[styles.timerText, { color: '#FFF9C4' }]}>
-                                    {isStarted ? `${phaseDurationSecs} Seconds` : "1 Min Session"}
+                                    {isStarted ? `${phaseCountdown} ` : "1 Min Session"}
                                 </Text>
                             </LinearGradient>
                         </Animated.View>
@@ -293,11 +298,24 @@ const BreathingSessionScreen = () => {
 
                     {/* 🌟 PAKEISTA: Paspaudus Skip, tiesiog įjungiam isCompleted būseną! */}
                     {/* Tai iškart iššauks ModalCompleteScreen be papildomų taškų įpylimo */}
-                    {fromCheckIn && <TouchableOpacity style={{ marginTop: 20 }} onPress={() => setIsCompleted(true)}>
+                    {fromCheckIn && <TouchableOpacity style={{ marginTop: 20 }} onPress={() => (navigation as any).popToTop()}>
                         <Text style={{ color: THEME.colors.primary, fontWeight: '700' }}>Skip for now</Text>
+                    </TouchableOpacity>}
+                    {!fromCheckIn && <TouchableOpacity style={{ marginTop: 20 }} onPress={navigation.goBack}>
+                        <Text style={{ color: THEME.colors.primary, fontWeight: '700' }}>Go back</Text>
                     </TouchableOpacity>}
                 </Animated.View>
             )}
+
+            {isCompleted && <Animated.View style={[styles.readyOverlay]}>
+                <Text style={styles.readyTitle}>You completed the session!</Text>
+                <Text style={styles.readySub}>
+                    Great job! You've completed your breathing session. Take a moment to notice how you feel and carry this calmness with you throughout the day.
+                </Text>
+                <TouchableOpacity style={styles.startCheckInBtn} onPress={redirectToHome}>
+                    <Text style={styles.startCheckInBtnText}>Go Home</Text>
+                </TouchableOpacity>
+            </Animated.View>}
         </SafeAreaView>
     );
 };
@@ -322,7 +340,7 @@ const styles = StyleSheet.create({
     breatheCoreWrapper: { width: 220, height: 220, borderRadius: 110, ...THEME.shadows.editorial },
     breatheCore: { flex: 1, borderRadius: 110, justifyContent: 'center', alignItems: 'center' },
     phaseText: { color: 'white', fontSize: 30, fontWeight: '900', letterSpacing: 4, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
-    timerText: { color: 'white', opacity: 0.9, fontSize: 12, fontWeight: '700', marginTop: 6, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
+    timerText: { color: 'white', opacity: 0.9, fontSize: 16, fontWeight: '700', marginTop: 6, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
     readyOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: THEME.colors.background, justifyContent: 'center', alignItems: 'center', padding: 32, zIndex: 999 },
     readyTitle: { fontSize: 28, fontWeight: '900', fontStyle: 'italic', color: THEME.colors.onSurface, marginBottom: 12, textAlign: 'center' },
     readySub: { fontSize: 15, color: THEME.colors.onSurfaceVariant, textAlign: 'center', marginBottom: 36, lineHeight: 24 },
