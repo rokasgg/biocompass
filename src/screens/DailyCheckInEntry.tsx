@@ -151,7 +151,7 @@ const DailyCheckInEntry = () => {
                 <Animated.View style={{ transform: [{ translateY: dropAnim }], opacity: dropAnim.interpolate({ inputRange: [-30, 0], outputRange: [0, 1] }) }}>
 
                     {/* ========================================== */}
-                    {/* ☀️ RYTO ANKETOS ŽINGSNIAI                  */}
+                    {/* RYTO ANKETOS ŽINGSNIAI                  */}
                     {/* ========================================== */}
                     {currentPhase === 'morning' && (
                         <View>
@@ -159,7 +159,7 @@ const DailyCheckInEntry = () => {
                             {step === 0 && (
                                 <View style={styles.card}>
                                     <Text style={styles.overline}>DAILY RITUAL</Text>
-                                    <Text style={styles.title}>Morning Check-in ☀️</Text>
+                                    <Text style={styles.title}>Morning Check-in</Text>
                                     <Text style={styles.subtitle}>
                                         Welcome to your morning alignment. Take a deep breath. We will quickly prime your focus, sync your sleep metrics, and unlock your daily potential.
                                     </Text>
@@ -334,7 +334,7 @@ const DailyCheckInEntry = () => {
                 ) : (
                     <TouchableOpacity style={styles.footerButton} onPress={handleSubmitCheckIn}>
                         <Text style={styles.buttonText}>
-                            {currentPhase === 'morning' ? "Save & Start Morning Breath ☀️" : "Save & Start Evening Breath"}
+                            {currentPhase === 'morning' ? "Save & Start Morning Breath" : "Save & Start Evening Breath"}
                         </Text>
                     </TouchableOpacity>
                 )}

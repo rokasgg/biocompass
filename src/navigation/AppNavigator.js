@@ -169,7 +169,10 @@ export default function AppNavigator() {
                         <Stack.Screen
                             name="BreathingSession"
                             component={BreathingSessionScreen}
-
+                            options={{
+                                animation: 'slide_from_right',
+                                gestureEnabled: false, // Disable swipe back gesture
+                            }}
                         />
                         <Stack.Screen
                             name="BreathworkGallery"

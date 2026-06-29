@@ -135,7 +135,7 @@ const BreathworkGalleryScreen = () => {
                         title="Box Breathing"
                         description="A structured breathing technique that promotes focus and calm by inhaling, holding, exhaling, and holding for equal durations."
                         hasButton={true}
-                        onPress={() => navigation.navigate('BreathingSession')}
+                        onPress={() => navigation.navigate('BreathingSession', { breathingType: 'box' })}
                     />
                     <BreathworkCard
                         imageUri="https://images.unsplash.com/photo-1506905925346-21bda4d32df4"
@@ -153,7 +153,7 @@ const BreathworkGalleryScreen = () => {
                         description="A relaxing technique to fall asleep faster by inhaling for 4 seconds, holding for 7, and exhaling for 8."
                         backgroundColor={THEME.colors.surfaceContainerHigh}
                         hasButton={true}
-                        onPress={() => navigation.navigate('BreathingSession')}
+                        onPress={() => navigation.navigate('BreathingSession', { breathingType: 'sleep' })}
 
                     />
                     <BreathworkCard
@@ -173,7 +173,7 @@ const BreathworkGalleryScreen = () => {
                         backgroundColor={THEME.colors.surfaceContainerLow}
                         style={{ borderWidth: 1, borderColor: THEME.colors.primary + '10' }}
                         hasButton={true}
-                        onPress={() => navigation.navigate('BreathingSession')}
+                        onPress={() => navigation.navigate('BreathingSession', { breathingType: 'equal' })}
 
                     />
                 </View>

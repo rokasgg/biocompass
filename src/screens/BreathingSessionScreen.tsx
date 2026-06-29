@@ -8,6 +8,7 @@ import {
     Easing,
     Dimensions,
     ScrollView,
+    Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,21 +20,35 @@ import { useStore } from '../store/useStore';
 
 const { width } = Dimensions.get('window');
 
+type PhaseType = 'inhale' | 'hold-in' | 'exhale' | 'hold-out';
+type BreathPhaseConfig = { type: PhaseType; duration: number; label: string };
+
+const BREATHING_PATTERNS: Record<string, BreathPhaseConfig[]> = {
+    equal: [{ type: 'inhale', duration: 4000, label: 'INHALE' }, { type: 'exhale', duration: 4000, label: 'EXHALE' }],
+    coherent: [{ type: 'inhale', duration: 4000, label: 'INHALE' }, { type: 'exhale', duration: 4000, label: 'EXHALE' }],
+    focus: [{ type: 'inhale', duration: 4000, label: 'INHALE' }, { type: 'exhale', duration: 4000, label: 'EXHALE' }],
+    sleep: [{ type: 'inhale', duration: 4000, label: 'INHALE' }, { type: 'hold-in', duration: 7000, label: 'HOLD' }, { type: 'exhale', duration: 8000, label: 'EXHALE' }],
+    box: [{ type: 'inhale', duration: 4000, label: 'INHALE' }, { type: 'hold-in', duration: 4000, label: 'HOLD' }, { type: 'exhale', duration: 4000, label: 'EXHALE' }, { type: 'hold-out', duration: 4000, label: 'HOLD' }],
+};
+
 const BreathingSessionScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
 
     const breathingType = (route.params as { breathingType?: string })?.breathingType ?? 'coherent';
+
+    console.log('BreathingSessionScreen params:', route.params, 'asd', breathingType);
     const fromCheckIn = (route.params as { fromCheckIn?: boolean })?.fromCheckIn ?? false;
     const passedDuration = (route.params as { duration?: number })?.duration;
 
-    const durationMap: Record<string, number> = { coherent: 180, sleep: 240, focus: 120 };
+    const durationMap: Record<string, number> = { coherent: 180, equal: 180, sleep: 300, focus: 120, box: 240 };
     const sessionDuration = passedDuration ?? (durationMap[breathingType] ?? 180);
 
-    const [isStarted, setIsStarted] = useState(!fromCheckIn);
-    const [isRunning, setIsRunning] = useState(!fromCheckIn);
+    const [isStarted, setIsStarted] = useState(false);
+    const [isRunning, setIsRunning] = useState(false);
 
     const [phase, setPhase] = useState('INHALE');
+    const [phaseDurationSecs, setPhaseDurationSecs] = useState(4);
     const [durationSecs] = useState(sessionDuration);
     const [progress, setProgress] = useState(0);
 
@@ -44,19 +59,15 @@ const BreathingSessionScreen = () => {
     const [bgAnimValue, setBgAnimValue] = useState(0);
     const [modalShow, setModalShow] = useState(false);
     const [isCompleted, setIsCompleted] = useState(false);
-    const lastAnimValue = useRef(1);
+    const pausedAnimValue = useRef(1);
+    const currentPhaseIdxRef = useRef(0);
+    const isRunningRef = useRef(false);
+    const readyOpacity = useRef(new Animated.Value(1)).current;
+    const [readyVisible, setReadyVisible] = useState(true);
 
     useEffect(() => {
+        isRunningRef.current = isRunning;
         if (!isStarted) return;
-
-        const listenerId = breatheAnim.addListener(({ value }) => {
-            if (value > lastAnimValue.current + 0.001) {
-                setPhase('INHALE');
-            } else if (value < lastAnimValue.current - 0.001) {
-                setPhase('EXHALE');
-            }
-            lastAnimValue.current = value;
-        });
 
         if (isRunning && !bgAnimStarted.current) {
             bgAnimStarted.current = true;
@@ -66,42 +77,52 @@ const BreathingSessionScreen = () => {
                 easing: Easing.linear,
                 useNativeDriver: false,
             }).start();
-
-            bgAnim.addListener(({ value }) => {
-                setBgAnimValue(value);
-            });
+            bgAnim.addListener(({ value }) => setBgAnimValue(value));
         }
 
-        const runBreathing = () => {
-            if (!isRunning) return;
-            setPhase('INHALE');
+        const pattern = BREATHING_PATTERNS[breathingType] ?? BREATHING_PATTERNS.equal;
 
-            Animated.timing(breatheAnim, {
-                toValue: 1.2,
-                duration: 4000,
-                easing: Easing.inOut(Easing.sin),
-                useNativeDriver: true,
-            }).start(({ finished }) => {
-                if (finished && isRunning) {
-                    Animated.delay(500).start(() => {
-                        if (!isRunning) return;
-                        setPhase('EXHALE');
+        const runPhase = (idx: number, currentValue: number) => {
+            if (!isRunningRef.current) return;
+            currentPhaseIdxRef.current = idx;
+            const { type, duration, label } = pattern[idx];
+            const next = (idx + 1) % pattern.length;
 
-                        Animated.timing(breatheAnim, {
-                            toValue: 1,
-                            duration: 4000,
-                            easing: Easing.inOut(Easing.sin),
-                            useNativeDriver: true,
-                        }).start(({ finished: f }) => {
-                            if (f && isRunning) runBreathing();
-                        });
-                    });
-                }
-            });
+            if (type === 'inhale') {
+                const remaining = Math.max(0.02, (1.2 - currentValue) / 0.2);
+                setPhase(label);
+                setPhaseDurationSecs(duration / 1000);
+                Animated.timing(breatheAnim, {
+                    toValue: 1.2,
+                    duration: Math.round(duration * remaining),
+                    easing: Easing.inOut(Easing.sin),
+                    useNativeDriver: true,
+                }).start(({ finished }) => {
+                    if (finished && isRunningRef.current) runPhase(next, 1.2);
+                });
+            } else if (type === 'hold-in' || type === 'hold-out') {
+                setPhase(label);
+                setPhaseDurationSecs(duration / 1000);
+                Animated.delay(duration).start(({ finished }) => {
+                    if (finished && isRunningRef.current) runPhase(next, currentValue);
+                });
+            } else {
+                const remaining = Math.max(0.02, (currentValue - 1.0) / 0.2);
+                setPhase(label);
+                setPhaseDurationSecs(duration / 1000);
+                Animated.timing(breatheAnim, {
+                    toValue: 1.0,
+                    duration: Math.round(duration * remaining),
+                    easing: Easing.inOut(Easing.sin),
+                    useNativeDriver: true,
+                }).start(({ finished: f }) => {
+                    if (f && isRunningRef.current) runPhase(next, 1.0);
+                });
+            }
         };
 
         if (isRunning) {
-            runBreathing();
+            runPhase(currentPhaseIdxRef.current, pausedAnimValue.current);
             Animated.loop(
                 Animated.sequence([
                     Animated.timing(pulseAnim, { toValue: 1.05, duration: 1500, useNativeDriver: true }),
@@ -109,13 +130,12 @@ const BreathingSessionScreen = () => {
                 ])
             ).start();
         } else {
-            breatheAnim.stopAnimation();
+            breatheAnim.stopAnimation(v => { pausedAnimValue.current = v; });
             pulseAnim.stopAnimation();
         }
 
         return () => {
-            breatheAnim.removeListener(listenerId);
-            breatheAnim.stopAnimation();
+            breatheAnim.stopAnimation(v => { pausedAnimValue.current = v; });
             pulseAnim.stopAnimation();
         };
     }, [isRunning, isStarted]);
@@ -140,7 +160,7 @@ const BreathingSessionScreen = () => {
 
     // Laikmačio useEffect
     useEffect(() => {
-        if (!isRunning || progress >= 100) return;
+        if (!isRunning) return;
 
         const interval = setInterval(() => {
             setProgress((prev) => {
@@ -153,7 +173,7 @@ const BreathingSessionScreen = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isRunning, durationSecs, progress]);
+    }, [isRunning, durationSecs]);
 
     const displaySeconds = Math.min(Math.round((progress / 100) * durationSecs), durationSecs);
     const bgProgress = bgAnimValue;
@@ -187,9 +207,18 @@ const BreathingSessionScreen = () => {
     }
 
     const handleStartSession = () => {
-        setIsStarted(true);
-        setIsRunning(true);
+        Animated.timing(readyOpacity, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+        }).start(() => {
+            setReadyVisible(false);
+            setIsStarted(true);
+            setIsRunning(true);
+        });
     };
+
+
 
     if (modalShow) {
         return <ModalConfirmation onConfirm={closeModal} onCancel={keepGoing} />
@@ -202,7 +231,7 @@ const BreathingSessionScreen = () => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: getBgColor() }]}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <View style={styles.scrollContent}>
 
                 {/* --- Session Header --- */}
                 <View style={styles.sessionHeader}>
@@ -228,7 +257,7 @@ const BreathingSessionScreen = () => {
                                     {isStarted ? phase : "READY"}
                                 </Text>
                                 <Text style={[styles.timerText, { color: '#FFF9C4' }]}>
-                                    {isStarted ? "4 Seconds" : "1 Min Session"}
+                                    {isStarted ? `${phaseDurationSecs} Seconds` : "1 Min Session"}
                                 </Text>
                             </LinearGradient>
                         </Animated.View>
@@ -249,14 +278,14 @@ const BreathingSessionScreen = () => {
                         <Text style={styles.stopBtnText}>Stop Session</Text>
                     </TouchableOpacity>
                 )}
-            </ScrollView>
+            </View>
 
             {/* Ready Overlay */}
-            {!isStarted && (
-                <View style={styles.readyOverlay}>
+            {readyVisible && (
+                <Animated.View style={[styles.readyOverlay, { opacity: readyOpacity }]}>
                     <Text style={styles.readyTitle}>Are you ready to center?</Text>
                     <Text style={styles.readySub}>
-                        Find a comfortable sitting position, relax your shoulders, and prepare for 1 minute of deep conscious breathing.
+                        Find a comfortable sitting position, relax your shoulders, and prepare for {durationSecs} seconds of deep conscious breathing.
                     </Text>
                     <TouchableOpacity style={styles.startCheckInBtn} onPress={handleStartSession}>
                         <Text style={styles.startCheckInBtnText}>Begin Breathing Session</Text>
@@ -264,10 +293,10 @@ const BreathingSessionScreen = () => {
 
                     {/* 🌟 PAKEISTA: Paspaudus Skip, tiesiog įjungiam isCompleted būseną! */}
                     {/* Tai iškart iššauks ModalCompleteScreen be papildomų taškų įpylimo */}
-                    <TouchableOpacity style={{ marginTop: 20 }} onPress={() => setIsCompleted(true)}>
+                    {fromCheckIn && <TouchableOpacity style={{ marginTop: 20 }} onPress={() => setIsCompleted(true)}>
                         <Text style={{ color: THEME.colors.primary, fontWeight: '700' }}>Skip for now</Text>
-                    </TouchableOpacity>
-                </View>
+                    </TouchableOpacity>}
+                </Animated.View>
             )}
         </SafeAreaView>
     );
@@ -298,7 +327,14 @@ const styles = StyleSheet.create({
     readyTitle: { fontSize: 28, fontWeight: '900', fontStyle: 'italic', color: THEME.colors.onSurface, marginBottom: 12, textAlign: 'center' },
     readySub: { fontSize: 15, color: THEME.colors.onSurfaceVariant, textAlign: 'center', marginBottom: 36, lineHeight: 24 },
     startCheckInBtn: { backgroundColor: THEME.colors.primary, paddingVertical: 16, paddingHorizontal: 36, borderRadius: 28, ...THEME.shadows.editorial },
-    startCheckInBtnText: { color: 'white', fontWeight: '800', fontSize: 16 }
+    startCheckInBtnText: { color: 'white', fontWeight: '800', fontSize: 16 },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(2,6,23,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+    modalContainer: { width: '100%', maxWidth: 420, backgroundColor: '#fff', borderRadius: 14, padding: 20 },
+    modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 8, color: THEME.colors.onSurface },
+    modalMessage: { fontSize: 14, color: THEME.colors.onSurfaceVariant, marginBottom: 18 },
+    modalButtons: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
+    modalButton: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10 },
+    modalButtonText: { fontSize: 15, fontWeight: '800' }
 });
 
 export default BreathingSessionScreen;
