@@ -38,9 +38,8 @@ export const checkInService = {
     },
 
     async getUserDashboardData(userId: string) {
-        console.log("KVIEČIU DB DAŠBORDUI");
         const today = new Date().toISOString().split('T')[0];
-
+        console.log("KVIEČIU DB DAŠBORDUI", today);
         // 1. Gaunam šios dienos metrikas
         const { data: todayMetrics } = await supabase
             .from('daily_metrics')
@@ -49,12 +48,14 @@ export const checkInService = {
             .eq('date', today)
             .single();
 
-        // 2. Suskaičiuojam TOTAL score tik iš daily_metrics lentelės
+        // 2. PRIDEK DAR IR DATA, kad galetum atvaizduoti streaks ir history.
         const { data: allMetrics } = await supabase
             .from('daily_metrics')
             .select('daily_score')
             .eq('user_id', userId);
 
+        console.log('todayMetrics:', todayMetrics);
+        console.log('userId:', userId);
         // Susumuojam visų dienų rezultatus
         const totalScore = allMetrics?.reduce((sum, item) => sum + (item.daily_score || 0), 0) || 0;
 

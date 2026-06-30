@@ -111,13 +111,15 @@ const DailyCheckInEntry = () => {
                 morning_focus: todayFocus,
                 drank_water: drankWater,
                 meditated: meditated,
-                paid_compliment: paidCompliment
+                paid_compliment: paidCompliment,
+                morning_completed: true
             } : {
                 screen_hours: screenHours,
                 digital_fatigue: emojiIndex,
                 no_sugar: noSugar,
                 stretched: stretched,
-                hit_gym: hitGym
+                hit_gym: hitGym,
+                evening_completed: true
             };
 
             // Siunčiame į servisą

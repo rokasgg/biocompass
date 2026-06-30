@@ -4,6 +4,7 @@ import {
     View,
     Text,
     ScrollView,
+    RefreshControl,
     TouchableOpacity,
     StatusBar,
     Dimensions,
@@ -45,22 +46,42 @@ const HomeScreen = () => {
     const checkAndResetDaily = useStore(state => (state as any).checkAndResetDaily);
 
 
-    const [totalScore, setTotalScore] = useState<number>(0);
+
     const [dailyScore, setDailyScore] = useState<number>(0);
     const [screenTimeMinutes, setScreenTimeMinutes] = useState<number>(0);
     const [hasCompletedMorningCheckIn, setHasCompletedMorningCheckIn] = useState<boolean>(false);
     const [hasCompletedEveningCheckIn, setHasCompletedEveningCheckIn] = useState<boolean>(false);
     const [isLoadingDb, setIsLoadingDb] = useState<boolean>(true);
+    const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
     const loadData = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            const data = await checkInService.getUserDashboardData(user.id);
-            console.log("Gauti duomenys iš checkInService:", data);
-            // setTotalScore(data.totalScore);
-            setDailyScore(data.todayMetrics?.daily_score || 0);
+        try {
+            setIsLoadingDb(true); // Saugiai parodom loading būseną, jei reikia
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const data = await checkInService.getUserDashboardData(user.id);
+                console.log("Gauti duomenys iš checkInService:", data);
+
+                // Supildom VISAS būsenas vienoje vietoje
+                setDailyScore(data.todayMetrics?.daily_score || 0);
+                setHasCompletedMorningCheckIn(!!data.todayMetrics?.morning_completed);
+                setHasCompletedEveningCheckIn(!!data.todayMetrics?.evening_completed);
+
+                // Nepamirštam ir ekrano minučių, kad Bento grid'as atsinaujintų per Refresh!
+                const hours = data.todayMetrics?.screen_hours || 0;
+                setScreenTimeMinutes(Math.round(hours * 60));
+            }
+        } catch (err) {
+            console.error("Nepavyko užkrauti duomenų:", err);
+        } finally {
+            setIsLoadingDb(false);
         }
-        setIsLoadingDb(false);
+    };
+
+    const onRefresh = async () => {
+        setIsRefreshing(true);
+        await loadData();
+        setIsRefreshing(false);
     };
 
 
@@ -115,42 +136,17 @@ const HomeScreen = () => {
     // Jei nerodom jokio mygtuko, reiškia esam "Užrakintame / Laukimo" režime
     const isCheckinLocked = !showMorningButton && !showEveningButton;
 
-    const maxAvailableScore = isMorningPhase ? 35 : 100;
+    console.log('hasCompletedEveningCheckIn:', hasCompletedEveningCheckIn);
+    // const maxAvailableScore = isMorningPhase ? 35 : 100;
+    const maxAvailableScore = isMorningPhase ? 70 : 135;;
+    // const vitalityPercentage = Math.min(Math.round((dailyScore / maxAvailableScore) * 100), 100);
     const vitalityPercentage = Math.min(Math.round((dailyScore / maxAvailableScore) * 100), 100);
 
 
     useFocusEffect(
         React.useCallback(() => {
-            console.log("Fire7");
-            const fetchDbData = async () => {
-                try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) return;
-
-                    const data = await checkInService.getUserDashboardData(user.id);
-
-                    // Supildom gautus duomenis iš Supabase
-                    // setTotalScore(data.totalScore);
-                    setDailyScore(data.todayMetrics?.daily_score || 0);
-
-                    // Konvertuojam ekrano valandas atgal į minutes, kad Bento grid'as suprastų
-                    const hours = data.todayMetrics?.screen_hours || 0;
-                    setScreenTimeMinutes(Math.round(hours * 60));
-
-                    // Protingai nustatom ar check-in atlikti (tikrinam ar yra įrašai bazėje)
-                    setHasCompletedMorningCheckIn(!!data.todayMetrics?.morning_focus);
-
-                    // Vakaro check-in skaitom kaip atliktą, jei jau yra įvestos ekrano valandos (net jei jos 0)
-                    setHasCompletedEveningCheckIn(data.todayMetrics?.screen_hours !== null && data.todayMetrics?.screen_hours !== undefined);
-
-                } catch (err) {
-                    console.error("Nepavyko užkrauti duomenų iš DB:", err);
-                } finally {
-                    setIsLoadingDb(false);
-                }
-            };
-
-            fetchDbData();
+            console.log("Ekranas sufokusuotas - kraunam duomenis...");
+            loadData();
         }, [])
     );
 
@@ -245,7 +241,12 @@ const HomeScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                    <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={THEME.colors.primary} />
+                }
+            >
 
                 {/* --- Hero Section --- */}
                 <View style={styles.heroSection}>
