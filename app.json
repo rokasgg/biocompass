@@ -17,6 +17,9 @@
       "bundleIdentifier": "com.brocool.HabTra",
       "entitlements": {
         "com.apple.developer.healthkit": true
+      },
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "HabTra needs access to your local network to connect to the Expo development server."
       }
       // IŠTRINTAS infoPlist blokas iš čia!
     },
@@ -38,7 +41,6 @@
           "healthShareUsageDescription": "We need your steps and sleep data to personalize your wellness journey.",
           "healthUpdateUsageDescription": "We use your data to help you visualize your progress."
         },
-        
       ],
       [
         "expo-build-properties",

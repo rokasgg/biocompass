@@ -17,6 +17,7 @@ import { THEME } from '../theme';
 
 import ModalConfirmation from '../compoments/ModalConfirmation';
 import { useStore } from '../store/useStore';
+import ModalInformation from 'src/compoments/ModalInfo';
 
 const { width } = Dimensions.get('window');
 
@@ -228,8 +229,6 @@ const BreathingSessionScreen = () => {
         });
     };
 
-
-
     if (modalShow) {
         return <ModalConfirmation onConfirm={closeModal} onCancel={keepGoing} />
     }
@@ -285,37 +284,26 @@ const BreathingSessionScreen = () => {
                 )}
             </View>
 
-            {/* Ready Overlay */}
-            {readyVisible && (
-                <Animated.View style={[styles.readyOverlay, { opacity: readyOpacity }]}>
-                    <Text style={styles.readyTitle}>Are you ready to center?</Text>
-                    <Text style={styles.readySub}>
-                        Find a comfortable sitting position, relax your shoulders, and prepare for {durationSecs} seconds of deep conscious breathing.
-                    </Text>
-                    <TouchableOpacity style={styles.startCheckInBtn} onPress={handleStartSession}>
-                        <Text style={styles.startCheckInBtnText}>Begin Breathing Session</Text>
-                    </TouchableOpacity>
 
-                    {/* 🌟 PAKEISTA: Paspaudus Skip, tiesiog įjungiam isCompleted būseną! */}
-                    {/* Tai iškart iššauks ModalCompleteScreen be papildomų taškų įpylimo */}
-                    {fromCheckIn && <TouchableOpacity style={{ marginTop: 20 }} onPress={() => (navigation as any).popToTop()}>
-                        <Text style={{ color: THEME.colors.primary, fontWeight: '700' }}>Skip for now</Text>
-                    </TouchableOpacity>}
-                    {!fromCheckIn && <TouchableOpacity style={{ marginTop: 20 }} onPress={navigation.goBack}>
-                        <Text style={{ color: THEME.colors.primary, fontWeight: '700' }}>Go back</Text>
-                    </TouchableOpacity>}
-                </Animated.View>
-            )}
+            {readyVisible &&
+                <ModalInformation
+                    title='Are you ready to center?'
+                    description={`Find a comfortable sitting position, relax your shoulders, and prepare for ${durationSecs} seconds of deep conscious breathing.`}
+                    primaryButtonDetails={{ text: 'Begin Breathing Session', onPress: handleStartSession }}
+                    secondaryButtonDetails={fromCheckIn ? { text: 'Skip for now', onPress: () => { setIsCompleted(true); setReadyVisible(false); } } : { text: 'Go back', onPress: navigation.goBack }}
+                    optionalStyle={{ opacity: readyOpacity }}
+                />
 
-            {isCompleted && <Animated.View style={[styles.readyOverlay]}>
-                <Text style={styles.readyTitle}>You completed the session!</Text>
-                <Text style={styles.readySub}>
-                    Great job! You've completed your breathing session. Take a moment to notice how you feel and carry this calmness with you throughout the day.
-                </Text>
-                <TouchableOpacity style={styles.startCheckInBtn} onPress={redirectToHome}>
-                    <Text style={styles.startCheckInBtnText}>Go Home</Text>
-                </TouchableOpacity>
-            </Animated.View>}
+            }
+
+            {isCompleted &&
+                <ModalInformation
+                    title='You completed the session!'
+                    description="Great job! You ve completed your breathing session. Take a moment to notice how you feel and carry this calmness with you throughout the day."
+                    primaryButtonDetails={{ text: 'Go Home', onPress: redirectToHome }}
+                />
+
+            }
         </SafeAreaView>
     );
 };
