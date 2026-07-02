@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
 import { THEME } from '../theme';
 
 import ModalConfirmation from '../compoments/ModalConfirmation';
@@ -195,11 +195,7 @@ const BreathingSessionScreen = () => {
     };
 
     const redirectToHome = () => {
-        if (isCompleted) {
-            (navigation as any).navigate('MainTabs', { screen: 'Home' });
-        } else {
-            navigation.goBack();
-        }
+        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'MainTabs' }] }));
     };
 
     const closeModal = () => {
@@ -290,13 +286,13 @@ const BreathingSessionScreen = () => {
                     title='Are you ready to center?'
                     description={`Find a comfortable sitting position, relax your shoulders, and prepare for ${durationSecs} seconds of deep conscious breathing.`}
                     primaryButtonDetails={{ text: 'Begin Breathing Session', onPress: handleStartSession }}
-                    secondaryButtonDetails={fromCheckIn ? { text: 'Skip for now', onPress: () => { setIsCompleted(true); setReadyVisible(false); } } : { text: 'Go back', onPress: navigation.goBack }}
+                    secondaryButtonDetails={fromCheckIn ? { text: 'Skip for now', onPress: () => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'MainTabs' }] })) } : { text: 'Go back', onPress: navigation.goBack }}
                     optionalStyle={{ opacity: readyOpacity }}
                 />
 
             }
 
-            {isCompleted &&
+            {isCompleted && isStarted && progress >= 100 &&
                 <ModalInformation
                     title='You completed the session!'
                     description="Great job! You ve completed your breathing session. Take a moment to notice how you feel and carry this calmness with you throughout the day."
