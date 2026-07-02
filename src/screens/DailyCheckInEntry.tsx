@@ -28,6 +28,10 @@ import Face3 from '../../assets/icons/face3.svg';
 import Face4 from '../../assets/icons/face4.svg';
 import Face5 from '../../assets/icons/face5.svg';
 
+import {
+    EyeIcon,
+} from '../../assets/icons';
+
 
 const { width } = Dimensions.get('window');
 
@@ -55,6 +59,10 @@ const DailyCheckInEntry = () => {
 
     const dropAnim = useRef(new Animated.Value(0)).current;
     const [showConfirm, setShowConfirm] = useState(false);
+
+    // --- Morning Check-In State ---
+    const [path, setPath] = useState('');
+    const [manifestation, setManifestation] = useState('');
 
     const handleBackPress = () => {
         if (step > 1) setStep((s) => s - 1);
@@ -96,7 +104,7 @@ const DailyCheckInEntry = () => {
     );
 
     // Dinamiškai nustatom maksimalų žingsnių skaičių pagal fazę
-    const maxSteps = currentPhase === 'morning' ? 2 : 3;
+    const maxSteps = currentPhase === 'morning' ? 3 : 3;
 
     // --- SUBMIT LOGIKA ---
 
@@ -108,10 +116,11 @@ const DailyCheckInEntry = () => {
 
             // Formuojame objektą pagal tai, kokioje fazėje esame
             const payload = currentPhase === 'morning' ? {
-                morning_focus: todayFocus,
+                morning_focus: manifestation,
                 drank_water: drankWater,
                 meditated: meditated,
                 paid_compliment: paidCompliment,
+                morning_theme: path,        // pvz., 'Inner Peace',
                 morning_completed: true
             } : {
                 screen_hours: screenHours,
@@ -139,6 +148,10 @@ const DailyCheckInEntry = () => {
             setIsLoading(false);
         }
     };
+
+    const onSelect = (selectedPath: string) => {
+        setPath(selectedPath);
+    }
 
 
 
@@ -170,26 +183,64 @@ const DailyCheckInEntry = () => {
                                     </View>
                                 </View>
                             )}
-
                             {step === 1 && (
-                                <View style={styles.card}>
-                                    <Text style={styles.overline}>STEP 1 OF 2</Text>
-                                    <Text style={styles.title}>Set Your Intent</Text>
-                                    <Text style={styles.subtitle}>What is your main focus or absolute win for today?</Text>
-                                    <TextInput
-                                        style={styles.textInput}
-                                        placeholder="Write down your focus..."
-                                        placeholderTextColor="#94A3B8"
-                                        value={todayFocus}
-                                        onChangeText={setTodayFocus}
-                                        multiline
-                                    />
+                                <View style={styles.step}>
+                                    <Text style={styles.overline}>STEP 01 — FOCUS</Text>
+                                    <Text style={styles.title}>What is your focus today?</Text>
+                                    <Text style={styles.subtitle}>Select an intention to guide your morning ritual.</Text>
+
+                                    <View style={styles.grid}>
+                                        <PathCard
+                                            title="Abundance"
+                                            sub="Cultivate a mindset of prosperity."
+                                            // icon={PaymentsIcon}
+                                            color={THEME.colors.primaryContainer}
+                                            onPress={() => onSelect('Abundance')}
+                                            selected={path === 'Abundance'}
+                                        />
+                                        <PathCard
+                                            title="Inner Peace"
+                                            sub="Silence the noise and find stillness."
+                                            // icon={SelfImprovementIcon}
+                                            color={THEME.colors.secondary}
+                                            onPress={() => onSelect('Inner Peace')}
+                                            selected={path === 'Inner Peace'}
+                                        />
+                                        <PathCard
+                                            title="Physical Vitality"
+                                            sub="Energize your body and soul."
+                                            // icon={BoltIcon}
+                                            color={THEME.colors.tertiary}
+                                            onPress={() => onSelect('Physical Vitality')}
+                                            selected={path === 'Physical Vitality'}
+                                        />
+                                    </View>
                                 </View>
                             )}
 
                             {step === 2 && (
+                                <View style={styles.step}>
+                                    <Text style={styles.overline}>STEP 02 — MANIFEST</Text>
+                                    <Text style={styles.title}>What are you calling in today?</Text>
+
+                                    <View style={styles.inputContainer}>
+                                        <EyeIcon width={40} fill={THEME.colors.primary} opacity={0.1} style={styles.quoteIcon} />
+                                        <Text style={styles.inputLabel}>I am manifesting...</Text>
+                                        <TextInput
+                                            multiline
+                                            style={styles.textArea}
+                                            placeholder="Speak it as if it is already yours..."
+                                            placeholderTextColor={THEME.colors.outlineVariant}
+                                            value={manifestation}
+                                            onChangeText={setManifestation}
+                                        />
+                                    </View>
+                                </View>
+                            )}
+
+                            {step === 3 && (
                                 <View style={styles.card}>
-                                    <Text style={styles.overline}>STEP 2 OF 2</Text>
+                                    <Text style={styles.overline}>STEP 3 OF 3</Text>
                                     <Text style={styles.title}>Morning Habits</Text>
                                     <Text style={styles.subtitle}>Check items you have already unlocked this morning:</Text>
                                     <View style={styles.checkboxContainer}>
@@ -344,6 +395,18 @@ const DailyCheckInEntry = () => {
         </SafeAreaView>
     );
 };
+const PathCard = ({ title, sub, color, onPress, selected }) => (
+    <TouchableOpacity style={[styles.pathCard, selected && { backgroundColor: THEME.colors.primary + '15' }]} onPress={onPress}>
+        <View style={[styles.iconCircle, { backgroundColor: color }]}>
+            {/* <Icon width={24} height={24} fill={THEME.colors.primary} /> */}
+        </View>
+        <View style={styles.cardText}>
+            <Text style={styles.cardTitle}>{title}</Text>
+            <Text style={styles.cardSub}>{sub}</Text>
+        </View>
+        {/* <OpenArrow width={16} fill={THEME.colors.outlineVariant} /> */}
+    </TouchableOpacity>
+);
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: THEME.colors.background },
@@ -382,7 +445,27 @@ const styles = StyleSheet.create({
     modalMessage: { fontSize: 14, color: THEME.colors.onSurfaceVariant, marginBottom: 18 },
     modalButtons: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
     modalButton: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10 },
-    modalButtonText: { fontSize: 15, fontWeight: '800' }
+    modalButtonText: { fontSize: 15, fontWeight: '800' },
+
+
+    // --- Morning Check-In Styles ---
+    step: { width: '100%' },
+    grid: { gap: 16 },
+
+
+
+    // --- Step 1 styles ---
+    pathCard: { backgroundColor: THEME.colors.background, borderRadius: 20, padding: 24, flexDirection: 'row', alignItems: 'center' },
+    iconCircle: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+    cardText: { flex: 1 },
+    cardTitle: { fontSize: 20, fontWeight: '700', color: THEME.colors.onSurface },
+    cardSub: { fontSize: 13, color: THEME.colors.onSurfaceVariant, marginTop: 4 },
+
+    // --- Step 2 styles ---
+    inputContainer: { backgroundColor: THEME.colors.surfaceContainerLow, borderRadius: 24, padding: 24, minHeight: 280, marginBottom: 40 },
+    quoteIcon: { position: 'absolute', top: 20, left: 10 },
+    inputLabel: { fontSize: 18, fontStyle: 'italic', color: THEME.colors.secondary, marginBottom: 16 },
+    textArea: { fontSize: 22, fontWeight: '700', color: THEME.colors.onSurface, textAlignVertical: 'top', flex: 1 },
 });
 
 export default DailyCheckInEntry;

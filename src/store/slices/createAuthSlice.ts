@@ -31,7 +31,14 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (set) 
         user: null,
         userId: null,
         score: 0,
-        stats: { totalSessions: 0, byType: {}, history: [] }
+        stats: { totalSessions: 0, byType: {}, history: [] },
+        screenTime: 0,
+        sleep: { hours: 0, quality: 'Average' },
+        activity: { steps: 0, calories: 0, updatedAt: Date.now() },
+        manifestationCount: 0,
+        hasCompletedMorningCheckIn: false,
+        hasCompletedEveningCheckIn: false,
+        lastActiveDate: null,
     }),
 
     setIsInitialLoading: (value) => set({ isLoading: value }),

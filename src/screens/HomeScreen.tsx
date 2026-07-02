@@ -17,7 +17,6 @@ import MetricCard from '../compoments/MetricWidget';
 import VitalityPlumbob from '../compoments/VitalityPlumbob';
 import { useNavigation } from '@react-navigation/native';
 import { useStore } from '../store/useStore';
-
 import {
     requestAuthorization,
     useStatisticsForQuantity,
@@ -30,12 +29,11 @@ import CheckInTimer from 'src/compoments/CheckInTimer';
 
 const { width } = Dimensions.get('window');
 const STATS_OPTIONS: ('cumulativeSum')[] = ['cumulativeSum'];
+
 const HomeScreen = () => {
     // 1. Išsitraukiam iš Store, ar checkinai jau padaryti!
     // (Pridėk juos į savo store. Jei dar nepridėjai, kol kas gali naudoti useState testavimui)
     const score = useStore((state) => state.score);
-
-
 
     const navigation = useNavigation();
     const [error, setError] = useState<string | null>(null);
@@ -44,30 +42,28 @@ const HomeScreen = () => {
     const pulse = useRef(new Animated.Value(1)).current;
 
     const checkAndResetDaily = useStore(state => (state as any).checkAndResetDaily);
-
-
+    const hasCompletedMorningCheckIn = useStore(state => (state as any).hasCompletedMorningCheckIn);
+    const hasCompletedEveningCheckIn = useStore(state => (state as any).hasCompletedEveningCheckIn);
+    const completeMorningCheckIn = useStore(state => (state as any).completeMorningCheckIn);
+    const completeEveningCheckIn = useStore(state => (state as any).completeEveningCheckIn);
 
     const [dailyScore, setDailyScore] = useState<number>(0);
     const [screenTimeMinutes, setScreenTimeMinutes] = useState<number>(0);
-    const [hasCompletedMorningCheckIn, setHasCompletedMorningCheckIn] = useState<boolean>(false);
-    const [hasCompletedEveningCheckIn, setHasCompletedEveningCheckIn] = useState<boolean>(false);
     const [isLoadingDb, setIsLoadingDb] = useState<boolean>(true);
     const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
     const loadData = async () => {
         try {
-            setIsLoadingDb(true); // Saugiai parodom loading būseną, jei reikia
+            setIsLoadingDb(true);
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 const data = await checkInService.getUserDashboardData(user.id);
                 console.log("Gauti duomenys iš checkInService:", data);
 
-                // Supildom VISAS būsenas vienoje vietoje
                 setDailyScore(data.todayMetrics?.daily_score || 0);
-                setHasCompletedMorningCheckIn(!!data.todayMetrics?.morning_completed);
-                setHasCompletedEveningCheckIn(!!data.todayMetrics?.evening_completed);
+                if (data.todayMetrics?.morning_completed) completeMorningCheckIn();
+                if (data.todayMetrics?.evening_completed) completeEveningCheckIn();
 
-                // Nepamirštam ir ekrano minučių, kad Bento grid'as atsinaujintų per Refresh!
                 const hours = data.todayMetrics?.screen_hours || 0;
                 setScreenTimeMinutes(Math.round(hours * 60));
             }
@@ -84,22 +80,14 @@ const HomeScreen = () => {
         setIsRefreshing(false);
     };
 
-
-
-    useEffect(() => {
-        console.log("Fire1");
-        loadData();
-    }, []);
-
-    useEffect(() => {
+    useFocusEffect(React.useCallback(() => {
         checkAndResetDaily();
-        console.log("Fire2");
-    }, []);
+        loadData();
+    }, []));
 
 
 
     useEffect(() => {
-        console.log("Fire4");
         const requestHealthKitPermissions = async () => {
             try {
                 const authorized = await requestAuthorization({

@@ -11,12 +11,14 @@ import {
   Dimensions,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { MailIcon, LockIcon, SendIcon, BackIcon } from '../../assets/icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '../theme';
 import { BreatheInIcon, SparkleIcon, OpenArrow, SleepIcon } from '../../assets/icons';
 import HeaderBar from '../compoments/HeaderBar';
 import { useNavigation } from '@react-navigation/native';
+import { useStore } from 'src/store/useStore';
 
 const { width } = Dimensions.get('window');
 
@@ -27,6 +29,7 @@ const RitualsScreen = () => {
   const radius = 120;
   const circumference = 2 * Math.PI * radius;
   const navigation = useNavigation();
+  const hasCompletedMorningCheckIn = useStore(state => (state as any).hasCompletedMorningCheckIn);
 
   useEffect(() => {
     Animated.timing(animatedScore, {
@@ -61,7 +64,7 @@ const RitualsScreen = () => {
                 <BreatheInIcon width={28} height={28} fill={THEME.colors.primary} />
               </View>
               <View style={styles.pointsBadge}>
-                <Text style={styles.pointsText}>+50 PTS</Text>
+                {/* <Text style={styles.pointsText}>+50 PTS</Text> */}
               </View>
             </View>
             <Text style={styles.cardTitle}>Guided Breathing</Text>
@@ -85,15 +88,20 @@ const RitualsScreen = () => {
                 <SparkleIcon width={28} height={28} fill={THEME.colors.tertiary} />
               </View>
               <View style={[styles.pointsBadge, { backgroundColor: THEME.colors.tertiaryFixed }]}>
-                <Text style={[styles.pointsText, { color: THEME.colors.onTertiaryFixedVariant }]}>+50 PTS</Text>
+                {/* <Text style={[styles.pointsText, { color: THEME.colors.onTertiaryFixedVariant }]}>+50 PTS</Text> */}
               </View>
             </View>
             <Text style={styles.cardTitle}>Daily Manifestation</Text>
             <Text style={styles.cardBody}>Align your intentions for the day ahead. Visualize success and document goals.</Text>
-            <TouchableOpacity style={styles.secondaryActionBtn} onPress={() => navigation.navigate('ManifestationSelection')}>
-              <Text style={styles.secondaryActionText}>Set Intentions</Text>
-              <OpenArrow width={18} fill={THEME.colors.primary} />
-            </TouchableOpacity>
+            {!hasCompletedMorningCheckIn ? (
+              <TouchableOpacity style={styles.secondaryActionBtn} onPress={() => (navigation as any).navigate('DailyCheckInEntry', { phase: 'morning' })}>
+                <Text style={styles.secondaryActionText}>Set Intentions</Text>
+                <OpenArrow width={18} fill={THEME.colors.primary} />
+              </TouchableOpacity>
+            ) : <View style={styles.secondaryActionBtn}>
+              <LockIcon width={24} height={24} color={THEME.colors.onSurfaceVariant} />
+            </View>}
+
           </View>
         </View>
 

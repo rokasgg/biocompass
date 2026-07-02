@@ -7,16 +7,12 @@ import {
     ScrollView,
     TouchableOpacity,
     Dimensions,
-    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { THEME } from '../theme';
-import {
-    BackIcon,
-} from '../../assets/icons';
 import BioLoader from '../compoments/BioLoader';
-import HeaderBar from '../compoments/HeaderBar';
+
 
 const { width } = Dimensions.get('window');
 
@@ -71,36 +67,28 @@ const BreathworkCard: React.FC<BreathworkCardProps> = ({
 
 const BreathworkGalleryScreen = () => {
     const navigation = useNavigation();
-
-
-    const [isLoading, setIsLoading] = useState(true);
-
     const [isTimerDone, setIsTimerDone] = useState(false);
     const [loadedImagesCount, setLoadedImagesCount] = useState(0);
+    const TOTAL_IMAGES = 3;
 
-    const TOTAL_IMAGES = 3; // Total number of images in the gallery
     useEffect(() => {
-        // Minimalus laikas, kiek norim rodyti loaderį (dėl UX grožio)
+
         const timer = setTimeout(() => {
             setIsTimerDone(true);
         }, 1000);
         return () => clearTimeout(timer);
     }, []);
 
-    // Funkcija, kurią kvies kiekviena korta, kai jos nuotrauka bus paruošta
     const handleImageLoad = () => {
         setLoadedImagesCount((prev) => prev + 1);
     };
 
-    // Loaderis rodomas, KOL nepasibaigė laikmatis ARBA kol nepasikrovė visos nuotraukos
+
     const showLoader = !isTimerDone || loadedImagesCount < TOTAL_IMAGES;
 
 
     return (
-        // 1. Šis root View užrakina vaizdą tiksliai pagal telefono ekrano rėmus
         <View style={styles.rootContainer}>
-
-            {/* Turinio sluoksnis */}
             <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -179,7 +167,6 @@ const BreathworkGalleryScreen = () => {
                 </ScrollView>
             </SafeAreaView>
 
-            {/* 2. Loaderio sluoksnis – dabar jis lygiuojasi pagal rootContainer, t.y. pagal realų ekraną */}
             {showLoader && (
                 <View style={styles.globalLoaderOverlay}>
                     <BioLoader />
@@ -194,19 +181,14 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: THEME.colors.background
     },
-
-    container: {
-        flex: 1
-    },
-
+    container: { flex: 1 },
     globalLoaderOverlay: {
-        ...StyleSheet.absoluteFill, // Dabar idealiai uždengs rootContainer (visą ekraną)
+        ...StyleSheet.absoluteFill,
         backgroundColor: THEME.colors.background,
-        justifyContent: 'center', // Centruoja idealiai per vidurį vertikaliai
-        alignItems: 'center',     // Centruoja idealiai per vidurį horizontaliai
-        zIndex: 999,              // Užkloja viską absoliučiai viršuje
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 999,
     },
-
 
     scrollContent: { paddingHorizontal: 20, paddingBottom: 100 },
     heroHeader: { marginBottom: 40 },
