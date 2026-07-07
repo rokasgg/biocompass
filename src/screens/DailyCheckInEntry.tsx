@@ -22,6 +22,7 @@ import { useStore } from '../store/useStore';
 import Check from '../../assets/icons/Check';
 import { checkInService } from '@backend/services/checkInService';
 import { supabase } from '@backend/supabase';
+import { useStatisticsForQuantity } from '@kingstinct/react-native-healthkit';
 import Face1 from '../../assets/icons/face1.svg';
 import Face2 from '../../assets/icons/face2.svg';
 import Face3 from '../../assets/icons/face3.svg';
@@ -59,6 +60,11 @@ const DailyCheckInEntry = () => {
 
     const dropAnim = useRef(new Animated.Value(0)).current;
     const [showConfirm, setShowConfirm] = useState(false);
+
+    const now = new Date();
+    const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0);
+    const stepStats = useStatisticsForQuantity('HKQuantityTypeIdentifierStepCount', ['cumulativeSum'], startOfDay, now);
+    const todaySteps = stepStats?.sumQuantity?.quantity ? Math.round(stepStats.sumQuantity.quantity) : 0;
 
     // --- Morning Check-In State ---
     const [path, setPath] = useState('');
@@ -109,6 +115,7 @@ const DailyCheckInEntry = () => {
     // --- SUBMIT LOGIKA ---
 
     const handleSubmitCheckIn = async () => {
+        console.log('Fire123')
         setIsLoading(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -120,15 +127,17 @@ const DailyCheckInEntry = () => {
                 drank_water: drankWater,
                 meditated: meditated,
                 paid_compliment: paidCompliment,
-                morning_theme: path,        // pvz., 'Inner Peace',
-                morning_completed: true
+                morning_theme: path,
+                morning_completed: true,
+                steps: todaySteps,
             } : {
                 screen_hours: screenHours,
                 digital_fatigue: emojiIndex,
                 no_sugar: noSugar,
                 stretched: stretched,
                 hit_gym: hitGym,
-                evening_completed: true
+                evening_completed: true,
+                steps: todaySteps,
             };
 
             // Siunčiame į servisą

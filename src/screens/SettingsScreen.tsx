@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     StyleSheet,
     View,
@@ -27,6 +27,8 @@ import { useStore } from '../store/useStore';
 import { supabase } from '../../backend/supabase'
 import BioLoader from '../compoments/BioLoader';
 
+const STREAK_GOALS = [7, 14, 30, 60, 90, 365];
+
 const SettingsScreen = () => {
     const navigation = useNavigation();
     const tabBarHeight = useBottomTabBarHeight();
@@ -35,12 +37,36 @@ const SettingsScreen = () => {
     const stats = useStore(s => s.stats);
     const score = useStore(s => s.score);
     const [loading, setLoading] = useState(false);
+    const [streak, setStreak] = useState<number | null>(null);
+    const currentGoal = STREAK_GOALS.find(goal => (streak ?? 0) < goal) || 365;
+    const streakProgress = streak ? Math.min((streak / currentGoal) * 100, 100) : 0;
+    const [sessionMinutes, setSessionMinutes] = useState<number>(0);
 
     const wait = new Promise((resolve, reject) => {
         setTimeout(() => {
             resolve('Wait finished');
         })
     })
+
+    const streakCheck = async () => {
+        if (!user?.userId) return;
+
+
+        const { data: streak, error } = await supabase
+            .rpc('get_user_streak', { user_id_param: user.userId })
+        if (error) {
+            console.log('Klaida iš Supabase:', error.message)
+            return;
+        }
+        setStreak(streak);
+        console.log(`Užfiksuotas streak: ${streak} d.`)
+    }
+    useEffect(() => {
+        if (user?.userId) {
+            streakCheck();
+            getTotalBreathingMinutes();
+        }
+    }, [user?.userId]);
 
     const logoutHandler = async () => {
         setLoading(true);
@@ -53,6 +79,23 @@ const SettingsScreen = () => {
 
         setLoading(false);
     };
+
+    const getTotalBreathingMinutes = async () => {
+        if (!user?.userId) return;
+
+        const { data: totalMinutes, error } = await supabase
+            .rpc('get_total_breathing_minutes', { user_id_param: user.userId });
+
+        if (error) {
+            console.error('Klaida gaunant bendrą kvėpavimo minučių skaičių:', error);
+            return;
+        }
+
+        setSessionMinutes(totalMinutes || 0);
+
+        console.log('Iš viso minučių:', totalMinutes); // Pvz: 45
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
@@ -83,11 +126,11 @@ const SettingsScreen = () => {
                             <Text style={styles.statusLabel}>IN PROGRESS</Text>
                         </View>
                         <View style={styles.progressData}>
-                            <Text style={styles.percentageText}>{score ?? null}</Text>
-                            <Text style={styles.progressSubtext}>Weekly completion</Text>
+                            <Text style={styles.percentageText}>{streak ?? 0} / {currentGoal}</Text>
+                            <Text style={styles.progressSubtext}>Goal Progress</Text>
                         </View>
                         <View style={styles.progressBarBg}>
-                            <View style={[styles.progressBarFill, { width: '74%' }]} />
+                            <View style={[styles.progressBarFill, { width: `${streakProgress}%` }]} />
                         </View>
                     </View>
 
@@ -96,8 +139,8 @@ const SettingsScreen = () => {
                         <View style={[styles.card, styles.squareCard]}>
                             <FlowerIcon width={28} height={28} fill={COLORS.secondary} style={{ marginBottom: 12 }} />
                             <View>
-                                <Text style={styles.statNumber}>{stats?.totalSessions}</Text>
-                                <Text style={styles.statLabel}>Mindful Sessions</Text>
+                                <Text style={styles.statNumber}>{sessionMinutes}</Text>
+                                <Text style={styles.statLabel}>Mindful Minutes</Text>
                             </View>
                         </View>
                         <View style={styles.separator}></View>

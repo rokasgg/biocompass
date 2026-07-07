@@ -18,6 +18,7 @@ import { THEME } from '../theme';
 import ModalConfirmation from '../compoments/ModalConfirmation';
 import { useStore } from '../store/useStore';
 import ModalInformation from 'src/compoments/ModalInfo';
+import { supabase } from '@backend/supabase';
 
 const { width } = Dimensions.get('window');
 
@@ -37,8 +38,8 @@ const BreathingSessionScreen = () => {
     const route = useRoute();
 
     const breathingType = (route.params as { breathingType?: string })?.breathingType ?? 'coherent';
+    const user = useStore(state => state.user);
 
-    console.log('BreathingSessionScreen params:', route.params, 'asd', breathingType);
     const fromCheckIn = (route.params as { fromCheckIn?: boolean })?.fromCheckIn ?? false;
     const passedDuration = (route.params as { duration?: number })?.duration;
 
@@ -147,19 +148,75 @@ const BreathingSessionScreen = () => {
         return () => clearTimeout(timer);
     }, [isRunning, phaseCountdown]);
 
+    const triggerDB = async () => {
+
+        setIsRunning(false);
+
+
+
+        const today = new Date().toISOString().split('T')[0];
+        const sessionMinutes = Math.round(durationSecs / 60);
+        console.log('******************* PIRST', user.userId, breathingType, sessionMinutes);
+
+        // 1. Įrašom sesiją į istoriją(tavo sessions lentelė profilio kortelei)
+        console.log('******************* ANTRAS', user.userId, breathingType, sessionMinutes);
+
+        const { data, error: insertError } = await supabase.from('sessions').insert([
+            {
+                user_id: user.userId, type: 'breathing',       // <- Čia įkalat bendrą kategoriją profilio kortelėms
+                sub_type: breathingType, duration: sessionMinutes
+            }
+        ]);
+
+        if (insertError) {
+            console.log('❌ SUPABASE SESSIONS KLAIDA:', JSON.stringify(insertError, null, 2));
+        } else {
+            console.log('✅ SESSIONS SĖKMINGAI ĮRAŠYTA:', data);
+        }
+
+        // 2. Pasiimam šios dienos esamas minutes iš daily_metrics
+        const { data: current } = await supabase
+            .from('daily_metrics')
+            .select('rituals_count')
+            .eq('user_id', user.userId)
+            .eq('date', today)
+            .single();
+
+        const currentMinutes = current?.rituals_count || 0;
+
+        // 🛡️ APSAUGA NUO SPAMINIMO: Neleidžiam kelti minučių virš 20 per dieną
+        const maxMinutes = 20;
+        if (currentMinutes >= maxMinutes) {
+            console.log('Limit pasiektas, minutės nebepildomos, taškai nebeaugs.');
+            setIsCompleted(true);
+            return;
+        }
+
+        // Skaičiuojam naujas minutes, bet neviršijam limito
+        const newMinutes = Math.min(currentMinutes + sessionMinutes, maxMinutes);
+
+        // 3. Tiesiog siunčiam naują minučių skaičių į DB. 
+        //             Kadangi tavo trigeris dabar nereaguoja į rituals_count, taškai kol kas nesikeis,
+        //     bet įrašas išsisaugos saugiai ir neperrašys jokių kitų tavo check -in duomenų!
+        await supabase
+            .from('daily_metrics')
+            .upsert({
+                user_id: user.userId,
+                date: today,
+                rituals_count: newMinutes
+            }, { onConflict: 'user_id, date' });
+
+
+
+    }
+
     // Finišo sekimas (suveikia TIK jei sąžiningai pabaigia kvėpuoti)
     useEffect(() => {
         if (progress >= 100) {
             setIsRunning(false);
             breatheAnim.stopAnimation();
             pulseAnim.stopAnimation();
-
-            // 🎁 BONUSAS: Kadangi atlaikė visą sesiją, įpilam +5 taškus
-            if (fromCheckIn) {
-                useStore.setState((state: any) => ({
-                    score: (state.score || 0) + 5
-                }));
-            }
+            triggerDB();
 
             setIsCompleted(true);
         }
@@ -235,7 +292,7 @@ const BreathingSessionScreen = () => {
 
                 {/* --- Session Header --- */}
                 <View style={styles.sessionHeader}>
-                    <Text style={[styles.title, isStarted && { color: 'white' }]}>Deep Restoration</Text>
+                    <TouchableOpacity onPress={triggerDB}><Text style={[styles.title, isStarted && { color: 'white' }]}>Deep Restoration</Text></TouchableOpacity>
                     <Text style={[styles.subtitle, isStarted && { color: 'rgba(255,255,255,0.8)' }]}>
                         Coherent breathing for nervous system balance
                     </Text>
@@ -325,9 +382,8 @@ const styles = StyleSheet.create({
     breatheCore: { flex: 1, borderRadius: 110, justifyContent: 'center', alignItems: 'center' },
     phaseText: { color: 'white', fontSize: 30, fontWeight: '900', letterSpacing: 4, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
     timerText: { color: 'white', opacity: 0.9, fontSize: 16, fontWeight: '700', marginTop: 6, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
-    readyOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: THEME.colors.background, justifyContent: 'center', alignItems: 'center', padding: 32, zIndex: 999 },
-    readyTitle: { fontSize: 28, fontWeight: '900', fontStyle: 'italic', color: THEME.colors.onSurface, marginBottom: 12, textAlign: 'center' },
-    readySub: { fontSize: 15, color: THEME.colors.onSurfaceVariant, textAlign: 'center', marginBottom: 36, lineHeight: 24 },
+
+
     startCheckInBtn: { backgroundColor: THEME.colors.primary, paddingVertical: 16, paddingHorizontal: 36, borderRadius: 28, ...THEME.shadows.editorial },
     startCheckInBtnText: { color: 'white', fontWeight: '800', fontSize: 16 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(2,6,23,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },

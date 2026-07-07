@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     StyleSheet,
     View,
@@ -42,6 +42,7 @@ const PersonalInfoScreen = () => {
         },
         mode: 'onBlur'
     });
+
 
 
     const saveSettings = async (data: AuthProfileFormData) => {
