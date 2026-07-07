@@ -46,8 +46,10 @@ const HomeScreen = () => {
     const hasCompletedEveningCheckIn = useStore(state => (state as any).hasCompletedEveningCheckIn);
     const completeMorningCheckIn = useStore(state => (state as any).completeMorningCheckIn);
     const completeEveningCheckIn = useStore(state => (state as any).completeEveningCheckIn);
+    const storedDailyScore = useStore(state => (state as any).dailyScore);
+    const storeDailyScore = useStore(state => (state as any).setDailyScore);
 
-    const [dailyScore, setDailyScore] = useState<number>(0);
+    const [dailyScore, setDailyScore] = useState<number>(storedDailyScore);
     const [screenTimeMinutes, setScreenTimeMinutes] = useState<number>(0);
     const [isLoadingDb, setIsLoadingDb] = useState<boolean>(true);
     const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -60,7 +62,9 @@ const HomeScreen = () => {
                 const data = await checkInService.getUserDashboardData(user.id);
                 console.log("Gauti duomenys iš checkInService:", data);
 
-                setDailyScore(data.todayMetrics?.daily_score || 0);
+                const fetched = data.todayMetrics?.daily_score || 0;
+                setDailyScore(fetched);
+                storeDailyScore(fetched);
                 if (data.todayMetrics?.morning_completed) completeMorningCheckIn();
                 if (data.todayMetrics?.evening_completed) completeEveningCheckIn();
 
@@ -271,7 +275,7 @@ const HomeScreen = () => {
                     {/* Plumbob Deimantukas */}
                     <View style={styles.plumbobContainer}>
                         <TouchableOpacity style={styles.plumbobDiamond} activeOpacity={0.9}>
-                            <VitalityPlumbob isLoading={false} score={vitalityPercentage} />
+                            <VitalityPlumbob isLoading={isLoadingDb} score={vitalityPercentage} />
                         </TouchableOpacity>
                     </View>
 

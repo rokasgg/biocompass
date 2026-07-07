@@ -36,6 +36,7 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (set) 
         sleep: { hours: 0, quality: 'Average' },
         activity: { steps: 0, calories: 0, updatedAt: Date.now() },
         manifestationCount: 0,
+        dailyScore: 0,
         hasCompletedMorningCheckIn: false,
         hasCompletedEveningCheckIn: false,
         lastActiveDate: null,

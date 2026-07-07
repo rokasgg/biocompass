@@ -16,6 +16,7 @@ export interface ActivityData {
 export interface StatsSlice {
     // Esami Duomenys
     stats: BreathingStats;
+    dailyScore: number;
     screenTime: number;
     sleep: {
         hours: number;
@@ -37,6 +38,7 @@ export interface StatsSlice {
     updateActivity: (steps: number, calories: number) => void;
     updateSleep: (hours: number, quality: string) => void;
     incrementManifestation: () => void;
+    setDailyScore: (score: number) => void;
 
     // NAUJA: Check-in veiksmai
     completeMorningCheckIn: () => void;
@@ -47,6 +49,7 @@ export interface StatsSlice {
 export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set) => ({
     // PRADINĖ BŪSENA
     stats: { totalSessions: 0, byType: {}, history: [] },
+    dailyScore: 0,
     screenTime: 0,
     sleep: { hours: 0, quality: 'Average' },
     activity: { steps: 0, calories: 0, updatedAt: Date.now() },
@@ -88,6 +91,8 @@ export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set
     incrementManifestation: () => set((state: any) => ({
         manifestationCount: state.manifestationCount + 1
     })),
+
+    setDailyScore: (score) => set({ dailyScore: score }),
 
     // NAUJA: Užfiksuojam ryto check-in sėkmę
     completeMorningCheckIn: () => set({ hasCompletedMorningCheckIn: true }),
