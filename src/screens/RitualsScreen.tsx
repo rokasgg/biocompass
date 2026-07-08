@@ -31,6 +31,10 @@ const RitualsScreen = () => {
   const navigation = useNavigation();
   const hasCompletedMorningCheckIn = useStore(state => (state as any).hasCompletedMorningCheckIn);
 
+  const currentHour = new Date().getHours();
+  const isMorningPhase = currentHour >= 6 && currentHour < 17;
+
+
   useEffect(() => {
     Animated.timing(animatedScore, {
       toValue: score / goal,
@@ -94,7 +98,7 @@ const RitualsScreen = () => {
             <Text style={styles.cardTitle}>Daily Manifestation</Text>
             <Text style={styles.cardBody}>Align your intentions for the day ahead. Visualize success and document goals.</Text>
             {!hasCompletedMorningCheckIn ? (
-              <TouchableOpacity style={styles.secondaryActionBtn} onPress={() => (navigation as any).navigate('DailyCheckInEntry', { phase: 'morning' })}>
+              <TouchableOpacity style={styles.secondaryActionBtn} onPress={() => (navigation as any).navigate('DailyCheckInEntry', { phase: isMorningPhase ? 'morning' : 'evening' })}>
                 <Text style={styles.secondaryActionText}>Set Intentions</Text>
                 <OpenArrow width={18} fill={THEME.colors.primary} />
               </TouchableOpacity>
