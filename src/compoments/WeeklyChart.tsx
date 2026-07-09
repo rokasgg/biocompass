@@ -42,9 +42,14 @@ export const WeeklyChart = ({ userId }: { userId: string }) => {
         return { date, dayName: DAY_NAMES[dayIndex], score };
     });
 
-    const scores = weekDays.map(d => d.score ?? 0).filter(s => s > 0);
-    const peak = scores.length > 0 ? Math.max(...scores) : 1;
-    const scale = Math.min(peak, MAX_SCORE);
+    const scale = MAX_SCORE;
+
+    const getBarColor = (score: number) => {
+        const pct = (score / MAX_SCORE) * 100;
+        if (pct >= 70) return THEME.colors.primary;
+        if (pct >= 40) return '#EAB308';
+        return THEME.colors.error;
+    };
 
     return (
         <View style={styles.card}>
@@ -72,39 +77,38 @@ export const WeeklyChart = ({ userId }: { userId: string }) => {
 
                 {/* Bars */}
                 <View style={[styles.chartArea, { flex: 1 }]}>
-                {weekDays.map((item) => {
-                    const isToday = item.date === todayDate;
-                    const isFuture = item.date > todayDate;
-                    const hasData = item.score !== null && item.score > 0;
-                    const barHeight = hasData
-                        ? Math.max((item.score! / scale) * CHART_HEIGHT, 6)
-                        : 6;
+                    {weekDays.map((item) => {
+                        const isToday = item.date === todayDate;
+                        const isFuture = item.date > todayDate;
+                        const hasData = item.score !== null && item.score > 0;
+                        const barHeight = hasData
+                            ? Math.max((item.score! / scale) * CHART_HEIGHT, 6)
+                            : 6;
 
-                    return (
-                        <View key={item.date} style={styles.barColumn}>
-                            {hasData && (
-                                <Text style={[styles.scoreLabel, isToday && styles.scoreLabelToday]}>
-                                    {item.score}
-                                </Text>
-                            )}
-                            <View style={styles.barTrack}>
-                                <View
-                                    style={[
-                                        styles.bar,
-                                        { height: barHeight },
-                                        isToday && hasData ? styles.barToday :
-                                            hasData ? styles.barDefault :
+                        return (
+                            <View key={item.date} style={styles.barColumn}>
+                                {hasData && (
+                                    <Text style={[styles.scoreLabel, isToday && styles.scoreLabelToday]}>
+                                        {item.score}
+                                    </Text>
+                                )}
+                                <View style={styles.barTrack}>
+                                    <View
+                                        style={[
+                                            styles.bar,
+                                            { height: barHeight },
+                                            hasData ? { backgroundColor: getBarColor(item.score!) } :
                                                 isFuture ? styles.barFuture :
                                                     styles.barMissed,
-                                    ]}
-                                />
+                                        ]}
+                                    />
+                                </View>
+                                <Text style={[styles.dayLabel, isToday && styles.dayLabelToday]}>
+                                    {item.dayName}
+                                </Text>
                             </View>
-                            <Text style={[styles.dayLabel, isToday && styles.dayLabelToday]}>
-                                {item.dayName}
-                            </Text>
-                        </View>
-                    );
-                })}
+                        );
+                    })}
                 </View>
             </View>
         </View>
