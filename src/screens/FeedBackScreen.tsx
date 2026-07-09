@@ -17,6 +17,7 @@ import { HeartIcon, SleepIcon, NutritionIcon, ScaleIcon, BrainIcon } from '../..
 import Header from '../compoments/HeaderBar';
 import { WeeklyChart } from 'src/compoments/WeeklyChart';
 import { useStore } from 'src/store/useStore';
+import { DetoxCard } from 'src/compoments/DetoxCard';
 const { width } = Dimensions.get('window');
 
 const FeedbackScreen = () => {
@@ -53,26 +54,11 @@ const FeedbackScreen = () => {
                         <WeeklyChart userId={user?.userId} />
 
                         {/* Nutrition Card */}
-                        <View style={[styles.card, styles.fullCard]}>
-                            <View style={styles.cardTop}>
-                                <View>
-                                    <Text style={styles.overline}>NOURISHMENT</Text>
-                                    <Text style={styles.cardHeading}>Nutrition</Text>
-                                </View>
-                                <NutritionIcon width={24} height={24} fill={THEME.colors.primary} />
-                            </View>
-
-                            <View style={styles.nutritionBars}>
-                                <HorizontalBar label="Whole Foods" percentage="92%" progress={0.92} />
-                                <HorizontalBar label="Hydration" percentage="78%" progress={0.78} />
-                            </View>
-
-                            <Text style={styles.cardFooterText}>Excellent antioxidant intake detected.</Text>
-                        </View>
+                        <DetoxCard userId={user?.userId} />
                     </View>
 
                     {/* Activity Chart Card (Full Width) */}
-                    <View style={[styles.card, styles.fullCard]}>
+                    {/* <View style={[styles.card, styles.fullCard]}>
                         <View style={styles.cardTop}>
                             <View>
                                 <Text style={styles.overline}>VITALITY</Text>
@@ -88,7 +74,7 @@ const FeedbackScreen = () => {
                                 <Bar key={day} label={day} height={Math.random() * 100} active={day === 'THU'} />
                             ))}
                         </View>
-                    </View>
+                    </View> */}
                 </View>
 
                 {/* --- Historical Insight List --- */}
