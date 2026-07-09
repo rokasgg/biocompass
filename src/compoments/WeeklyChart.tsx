@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { useWeeklyFeedback } from '../hooks/useWeeklyFeedback';
+import { View, Text, StyleSheet } from 'react-native';
 import { THEME } from '../theme';
 import { NutritionIcon } from '../../assets/icons';
 
@@ -20,17 +19,9 @@ function getCurrentWeekDates(): string[] {
     });
 }
 
-export const WeeklyChart = ({ userId }: { userId: string }) => {
-    const { weeklyScores, statusMessage, isLoading } = useWeeklyFeedback(userId);
+interface ChartDataPoint { date: string; dayName: string; score: number; }
 
-    if (isLoading) {
-        return (
-            <View style={[styles.card, styles.loadingCard]}>
-                <ActivityIndicator size="small" color={THEME.colors.primary} />
-            </View>
-        );
-    }
-
+export const WeeklyChart = ({ weeklyScores, statusMessage }: { weeklyScores: ChartDataPoint[]; statusMessage: string }) => {
     const todayDate = new Date().toISOString().split('T')[0];
     const weekDates = getCurrentWeekDates();
 

@@ -1,21 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { useWeeklyFeedback } from '../hooks/useWeeklyFeedback';
+import { View, Text, StyleSheet } from 'react-native';
 import { THEME } from '../theme';
-import DeviceIcon from '../../assets/icons/LEAFS.svg'; // Pasitikslink kelią iki savo DeviceIcon
+import DeviceIcon from '../../assets/icons/LEAFS.svg';
 
-export const DetoxCard = ({ userId }: { userId: string }) => {
-    // Pasiimam duomenis ir krovimosi būseną tiesiai iš tavo hook'o
-    const { detoxCard, yesterdayScreenTime, isLoading } = useWeeklyFeedback(userId);
+interface DetoxCardData { show: boolean; title: string; text: string; count: number; }
 
-    if (isLoading) {
-        return (
-            <View style={[styles.card, styles.loadingCard]}>
-                <ActivityIndicator size="small" color={THEME.colors.primary} />
-            </View>
-        );
-    }
-
+export const DetoxCard = ({ detoxCard, yesterdayScreenTime }: { detoxCard: DetoxCardData | null; yesterdayScreenTime: number | null }) => {
     return (
         <View>
             {detoxCard && detoxCard.show && (

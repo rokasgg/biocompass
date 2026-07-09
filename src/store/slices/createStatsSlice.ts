@@ -1,6 +1,9 @@
 import { StateCreator } from 'zustand';
 import { AppState } from '../useStore';
 
+export interface ChartDataPoint { date: string; dayName: string; score: number; }
+export interface DetoxCardData { show: boolean; title: string; text: string; count: number; }
+
 export interface BreathingStats {
     totalSessions: number;
     byType: Record<string, number>;
@@ -44,6 +47,25 @@ export interface StatsSlice {
     completeMorningCheckIn: () => void;
     completeEveningCheckIn: () => void;
     resetCheckIns: () => void;
+
+    // Weekly feedback cache
+    weeklyScores: ChartDataPoint[];
+    statusMessage: string;
+    detoxCard: DetoxCardData | null;
+    yesterdayScreenTime: number | null;
+    weeklyFeedbackFetchedAt: number | null;
+    setWeeklyFeedback: (payload: {
+        weeklyScores: ChartDataPoint[];
+        statusMessage: string;
+        detoxCard: DetoxCardData | null;
+        yesterdayScreenTime: number | null;
+    }) => void;
+
+    // Profile / Settings cache
+    profileStreak: number | null;
+    mindfulMinutes: number;
+    profileDataFetchedAt: number | null;
+    setProfileData: (payload: { streak: number | null; sessionMinutes: number }) => void;
 }
 
 export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set) => ({
@@ -60,6 +82,18 @@ export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set
     hasCompletedEveningCheckIn: false,
 
     lastActiveDate: null,
+
+    // Weekly feedback cache
+    weeklyScores: [],
+    statusMessage: '',
+    detoxCard: null,
+    yesterdayScreenTime: null,
+    weeklyFeedbackFetchedAt: null,
+
+    // Profile / Settings cache
+    profileStreak: null,
+    mindfulMinutes: 0,
+    profileDataFetchedAt: null,
 
     // VEIKSMAI
     addSession: (type, duration) => set((state: any) => {
@@ -104,6 +138,20 @@ export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set
     resetCheckIns: () => set({
         hasCompletedMorningCheckIn: false,
         hasCompletedEveningCheckIn: false
+    }),
+
+    setProfileData: (payload) => set({
+        profileStreak: payload.streak,
+        mindfulMinutes: payload.sessionMinutes,
+        profileDataFetchedAt: Date.now(),
+    }),
+
+    setWeeklyFeedback: (payload) => set({
+        weeklyScores: payload.weeklyScores,
+        statusMessage: payload.statusMessage,
+        detoxCard: payload.detoxCard,
+        yesterdayScreenTime: payload.yesterdayScreenTime,
+        weeklyFeedbackFetchedAt: Date.now(),
     }),
 
     checkAndResetDaily: () => set((state: any) => {

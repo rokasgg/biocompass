@@ -36,65 +36,51 @@ const SettingsScreen = () => {
     const user = useStore(state => state.user);
     const stats = useStore(s => s.stats);
     const score = useStore(s => s.score);
+    const profileStreak = useStore((s: any) => s.profileStreak);
+    const mindfulMinutes = useStore((s: any) => s.mindfulMinutes);
+    const profileDataFetchedAt = useStore((s: any) => s.profileDataFetchedAt);
+    const setProfileData = useStore((s: any) => s.setProfileData);
+
     const [loading, setLoading] = useState(false);
-    const [streak, setStreak] = useState<number | null>(null);
+    const [streak, setStreak] = useState<number | null>(profileStreak);
     const currentGoal = STREAK_GOALS.find(goal => (streak ?? 0) < goal) || 365;
     const streakProgress = streak ? Math.min((streak / currentGoal) * 100, 100) : 0;
-    const [sessionMinutes, setSessionMinutes] = useState<number>(0);
+    const [sessionMinutes, setSessionMinutes] = useState<number>(mindfulMinutes);
 
-    const wait = new Promise((resolve, reject) => {
-        setTimeout(() => {
-            resolve('Wait finished');
-        })
-    })
+    useEffect(() => {
+        if (!user?.userId) return;
+        const ONE_HOUR = 60 * 60 * 1000;
+        const isStale = !profileDataFetchedAt || Date.now() - profileDataFetchedAt > ONE_HOUR;
+        if (!isStale) return;
+        loadProfileData();
+    }, [user?.userId]);
 
-    const streakCheck = async () => {
+    const loadProfileData = async () => {
         if (!user?.userId) return;
 
+        const [streakResult, minutesResult] = await Promise.all([
+            supabase.rpc('get_user_streak', { user_id_param: user.userId }),
+            supabase.rpc('get_total_breathing_minutes', { user_id_param: user.userId }),
+        ]);
 
-        const { data: streak, error } = await supabase
-            .rpc('get_user_streak', { user_id_param: user.userId })
-        if (error) {
-            console.log('Klaida iš Supabase:', error.message)
-            return;
-        }
-        setStreak(streak);
-        console.log(`Užfiksuotas streak: ${streak} d.`)
-    }
-    useEffect(() => {
-        if (user?.userId) {
-            streakCheck();
-            getTotalBreathingMinutes();
-        }
-    }, [user?.userId]);
+        if (streakResult.error) console.log('Streak error:', streakResult.error.message);
+        if (minutesResult.error) console.error('Minutes error:', minutesResult.error.message);
+
+        const newStreak = streakResult.data ?? null;
+        const newMinutes = minutesResult.data || 0;
+
+        setStreak(newStreak);
+        setSessionMinutes(newMinutes);
+        setProfileData({ streak: newStreak, sessionMinutes: newMinutes });
+    };
 
     const logoutHandler = async () => {
         setLoading(true);
-        const delay = new Promise(resolve => setTimeout(resolve, 1000));
-
-        await delay;
-
-        supabase.auth.signOut()
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        supabase.auth.signOut();
         logout();
-
         setLoading(false);
     };
-
-    const getTotalBreathingMinutes = async () => {
-        if (!user?.userId) return;
-
-        const { data: totalMinutes, error } = await supabase
-            .rpc('get_total_breathing_minutes', { user_id_param: user.userId });
-
-        if (error) {
-            console.error('Klaida gaunant bendrą kvėpavimo minučių skaičių:', error);
-            return;
-        }
-
-        setSessionMinutes(totalMinutes || 0);
-
-        console.log('Iš viso minučių:', totalMinutes); // Pvz: 45
-    }
 
     return (
         <SafeAreaView style={styles.container}>

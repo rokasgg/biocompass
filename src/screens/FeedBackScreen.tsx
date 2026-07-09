@@ -9,6 +9,7 @@ import {
     StatusBar,
     Dimensions,
     Platform,
+    ActivityIndicator,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { THEME } from '../theme';
@@ -18,16 +19,27 @@ import Header from '../compoments/HeaderBar';
 import { WeeklyChart } from 'src/compoments/WeeklyChart';
 import { useStore } from 'src/store/useStore';
 import { DetoxCard } from 'src/compoments/DetoxCard';
+import { useWeeklyFeedback } from 'src/hooks/useWeeklyFeedback';
 const { width } = Dimensions.get('window');
 
 const FeedbackScreen = () => {
 
     const user = useStore(state => state.user);
+    const { weeklyScores, statusMessage, detoxCard, yesterdayScreenTime, isLoading } = useWeeklyFeedback(user?.userId ?? '');
+
+    if (isLoading) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.globalLoader}>
+                    <ActivityIndicator size="large" color={THEME.colors.primary} />
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
-
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
@@ -51,10 +63,8 @@ const FeedbackScreen = () => {
                     <View style={styles.row}>
                         {/* Sleep Quality Card */}
 
-                        <WeeklyChart userId={user?.userId} />
-
-                        {/* Nutrition Card */}
-                        <DetoxCard userId={user?.userId} />
+                        <WeeklyChart weeklyScores={weeklyScores} statusMessage={statusMessage} />
+                        <DetoxCard detoxCard={detoxCard} yesterdayScreenTime={yesterdayScreenTime} />
                     </View>
 
                     {/* Activity Chart Card (Full Width) */}
@@ -158,6 +168,7 @@ const TrendRow = ({ icon: Icon, title, sub, trend, color }) => (
 );
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: THEME.colors.background },
+    globalLoader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     header: { height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, backgroundColor: THEME.colors.surfaceContainerLow },
     headerLeft: { flexDirection: 'row', alignItems: 'center' },
     avatarMiniContainer: { width: 32, height: 32, borderRadius: 16, overflow: 'hidden', backgroundColor: THEME.colors.surfaceContainerHighest },

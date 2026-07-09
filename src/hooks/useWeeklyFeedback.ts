@@ -1,29 +1,26 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../backend/supabase';
+import { useStore } from '../store/useStore';
 
-interface ChartDataPoint {
-    date: string;
-    dayName: string;
-    score: number;
-}
-
-interface DetoxCardData {
-    show: boolean;
-    title: string;
-    text: string;
-    count: number;
-}
+const ONE_HOUR = 60 * 60 * 1000;
 
 export const useWeeklyFeedback = (userId: string) => {
-    const [weeklyScores, setWeeklyScores] = useState<ChartDataPoint[]>([]);
-    const [statusMessage, setStatusMessage] = useState('');
-    const [detoxCard, setDetoxCard] = useState<DetoxCardData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [yesterdayScreenTime, setYesterdayScreenTime] = useState<number | null>(null);
+    const weeklyScores = useStore((s: any) => s.weeklyScores);
+    const statusMessage = useStore((s: any) => s.statusMessage);
+    const detoxCard = useStore((s: any) => s.detoxCard);
+    const yesterdayScreenTime = useStore((s: any) => s.yesterdayScreenTime);
+    const weeklyFeedbackFetchedAt = useStore((s: any) => s.weeklyFeedbackFetchedAt);
+    const setWeeklyFeedback = useStore((s: any) => s.setWeeklyFeedback);
+
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
+        if (!userId) return;
+
+        const isStale = !weeklyFeedbackFetchedAt || Date.now() - weeklyFeedbackFetchedAt > ONE_HOUR;
+        if (!isStale) return;
+
         const fetchWeeklyData = async () => {
-            if (!userId) return;
             try {
                 setIsLoading(true);
 
@@ -37,55 +34,53 @@ export const useWeeklyFeedback = (userId: string) => {
                 if (error) throw error;
 
                 if (!data || data.length === 0) {
-                    setStatusMessage('⏳ Start your check-in rituals to unlock trends!');
-                    setWeeklyScores([]);
-                    setDetoxCard(null);
+                    setWeeklyFeedback({
+                        weeklyScores: [],
+                        statusMessage: '⏳ Start your check-in rituals to unlock trends!',
+                        detoxCard: null,
+                        yesterdayScreenTime: null,
+                    });
                     return;
                 }
 
                 const sortedData = [...data].reverse();
                 const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-                const formattedData: ChartDataPoint[] = sortedData.map((item) => {
-                    const d = new Date(item.date);
-                    return {
-                        date: item.date,
-                        dayName: daysOfWeek[d.getDay()],
-                        score: item.daily_score || 0,
-                    };
-                });
+                const formattedScores = sortedData.map((item) => ({
+                    date: item.date,
+                    dayName: daysOfWeek[new Date(item.date).getDay()],
+                    score: item.daily_score || 0,
+                }));
 
-                setWeeklyScores(formattedData);
-
-                // --- 1. GRAFIKO STATUSO LOGIKA ---
-                if (formattedData.length >= 3) {
-                    const len = formattedData.length;
-                    const scoreToday = formattedData[len - 1].score;
-                    const scoreYesterday = formattedData[len - 2].score;
-                    const scoreTwoDaysAgo = formattedData[len - 3].score;
+                // Trend status
+                let newStatusMessage = '📈 Gathering data for your weekly insights...';
+                if (formattedScores.length >= 3) {
+                    const len = formattedScores.length;
+                    const scoreToday = formattedScores[len - 1].score;
+                    const scoreYesterday = formattedScores[len - 2].score;
+                    const scoreTwoDaysAgo = formattedScores[len - 3].score;
 
                     if (scoreToday < scoreYesterday && scoreYesterday < scoreTwoDaysAgo) {
-                        setStatusMessage('⚠️ Overdrive Mode (Focus on sleep and reduce screen time)');
+                        newStatusMessage = '⚠️ Overdrive Mode (Focus on sleep and reduce screen time)';
                     } else if (scoreToday > scoreYesterday) {
-                        setStatusMessage('🚀 In the Zone (Your balance is improving)');
+                        newStatusMessage = '🚀 In the Zone (Your balance is improving)';
                     } else {
-                        setStatusMessage('⚖️ Steady Balance (You are maintaining a solid rhythm)');
+                        newStatusMessage = '⚖️ Steady Balance (You are maintaining a solid rhythm)';
                     }
-                } else {
-                    setStatusMessage('📈 Gathering data for your weekly insights...');
                 }
 
-                // --- 2. DETOX KORTELĖS LOGIKA ---
+                // Detox card
                 const highScreenDays = data.filter(day => parseFloat(day.screen_hours || '0') > 5);
                 const count = highScreenDays.length;
+                let newDetoxCard;
 
                 if (count === 0) {
-                    setDetoxCard({
+                    newDetoxCard = {
                         show: true,
-                        title: "Digital Detox Focus",
-                        text: "Great job! You stayed within the safe screen time limit all week. Your eyes and sleep quality thank you. 👁️",
-                        count: 0
-                    });
+                        title: 'Digital Detox Focus',
+                        text: 'Great job! You stayed within the safe screen time limit all week. Your eyes and sleep quality thank you. 👁️',
+                        count: 0,
+                    };
                 } else {
                     const lowScreenDays = data.filter(day => parseFloat(day.screen_hours || '0') <= 5);
                     const avgSleepLow = lowScreenDays.length > 0
@@ -95,19 +90,23 @@ export const useWeeklyFeedback = (userId: string) => {
                     const isSleepingWorse = avgSleepLow > 0 && avgSleepHigh < avgSleepLow;
 
                     let text = `You exceeded the safe screen time limit on ${count} days this week.`;
-                    if (isSleepingWorse) {
-                        text += ` This directly correlates with poorer sleep quality on those nights.`;
-                    } else {
-                        text += ` Try putting your device away 2 hours before bed to rest your mind.`;
-                    }
+                    text += isSleepingWorse
+                        ? ' This directly correlates with poorer sleep quality on those nights.'
+                        : ' Try putting your device away 2 hours before bed to rest your mind.';
 
-                    setDetoxCard({ show: true, title: "Digital Detox Focus", text, count });
+                    newDetoxCard = { show: true, title: 'Digital Detox Focus', text, count };
                 }
-                if (data && data.length > 0) {
-                    const yesterdayData = data[0];
-                    const hours = parseFloat(yesterdayData.screen_hours || '0');
-                    setYesterdayScreenTime(hours);
-                }
+
+                const newYesterdayScreenTime = data.length > 0
+                    ? parseFloat(data[0].screen_hours || '0')
+                    : null;
+
+                setWeeklyFeedback({
+                    weeklyScores: formattedScores,
+                    statusMessage: newStatusMessage,
+                    detoxCard: newDetoxCard,
+                    yesterdayScreenTime: newYesterdayScreenTime,
+                });
 
             } catch (err) {
                 console.error('Error loading feedback data:', err);
