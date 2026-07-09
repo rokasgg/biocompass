@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { use, useEffect } from 'react';
 import {
     StyleSheet,
     View,
@@ -15,9 +15,14 @@ import { THEME } from '../theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HeartIcon, SleepIcon, NutritionIcon, ScaleIcon, BrainIcon } from '../../assets/icons';
 import Header from '../compoments/HeaderBar';
+import { WeeklyChart } from 'src/compoments/WeeklyChart';
+import { useStore } from 'src/store/useStore';
 const { width } = Dimensions.get('window');
 
 const FeedbackScreen = () => {
+
+    const user = useStore(state => state.user);
+
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
@@ -44,21 +49,8 @@ const FeedbackScreen = () => {
                 <View style={styles.bentoGrid}>
                     <View style={styles.row}>
                         {/* Sleep Quality Card */}
-                        <View style={[styles.card, styles.fullCard]}>
-                            <View style={styles.cardTop}>
-                                <View>
-                                    <Text style={styles.overline}>CIRCADIAN</Text>
-                                    <Text style={styles.cardHeading}>Sleep Quality</Text>
-                                </View>
-                                <SleepIcon width={24} height={24} fill={THEME.colors.primary} />
-                            </View>
 
-                            <View style={styles.progressCircleContainer}>
-                                <CircularProgress size={100} strokeWidth={8} progress={0.85} color={THEME.colors.primary} />
-                            </View>
-
-                            <Text style={styles.cardFooterText}>Deep sleep increased by 12% this week.</Text>
-                        </View>
+                        <WeeklyChart userId={user?.userId} />
 
                         {/* Nutrition Card */}
                         <View style={[styles.card, styles.fullCard]}>
