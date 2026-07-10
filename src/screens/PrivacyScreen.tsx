@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     StyleSheet,
     View,
@@ -6,7 +6,8 @@ import {
     ScrollView,
     TouchableOpacity,
     Switch,
-    Platform,
+    Alert,
+    Linking,
 } from 'react-native';
 import { THEME } from '../theme';
 import {
@@ -19,16 +20,112 @@ import {
 } from '../../assets/icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { requestAuthorization, getRequestStatusForAuthorization } from '@kingstinct/react-native-healthkit';
+import { useStore } from '../store/useStore';
+import { supabase } from '../../backend/supabase';
+
+const HEALTHKIT_TYPES: any[] = [
+    'HKQuantityTypeIdentifierStepCount',
+    'HKCategoryTypeIdentifierSleepAnalysis',
+];
 
 const PrivacyScreen = () => {
-    const [healthSync, setHealthSync] = useState(true);
-    const [researchData, setResearchData] = useState(false);
-    const [leaderboard, setLeaderboard] = useState(true);
+    const user = useStore(s => s.user);
+    const setUser = useStore(s => s.setUser);
+
+    // 🔥 Pasiimam tavo Zustand store laukus ir setterius (pasitikslink pavadinimus pagal savo slice'ą)
+    const healthSyncEnabled = useStore(s => s.healthSyncEnabled);
+    const setHealthSyncEnabled = useStore(s => s.setHealthSyncEnabled);
+
     const navigation = useNavigation();
+
+    const [researchData, setResearchData] = useState(user?.shareResearch ?? false);
+    const [leaderboard, setLeaderboard] = useState(user?.leaderboardEnabled ?? true);
+
+    // Patikrinam realią situaciją telefone atidarant ekraną
+    useEffect(() => {
+        getRequestStatusForAuthorization({ toRead: HEALTHKIT_TYPES } as any)
+            .then(async (status: any) => {
+                const hasOSPermission = status === 'unnecessary';
+
+                // Jeigu vartotojas telefone atėmė teises, bet pas mus DB/Zustand stovi 'true' -> sinchronizuojam ir išjungiam
+                if (!hasOSPermission && healthSyncEnabled) {
+                    await updateHealthSyncStatus(false);
+                }
+            })
+            .catch(() => { });
+    }, []);
+
+    // Pagalbinė funkcija centralizuotam būsenos atnaujinimui
+    const updateHealthSyncStatus = async (enabled: boolean) => {
+        setHealthSyncEnabled(enabled); // Atnaujinam Zustand lokaliai
+
+        if (user?.userId) {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ health_sync_enabled: enabled }) // Tavo stulpelis Supabase
+                .eq('id', user.userId);
+
+            if (error) console.error('Error updating health sync in DB:', error.message);
+        }
+    };
+
+    const handleHealthSyncToggle = async (value: boolean) => {
+        if (value) {
+            // Vartotojas nori ĮJUNGTI
+            try {
+                const granted = await requestAuthorization({ toRead: HEALTHKIT_TYPES } as any);
+                if (granted) {
+                    await updateHealthSyncStatus(true);
+                } else {
+                    await updateHealthSyncStatus(false);
+                    Alert.alert(
+                        'Permission Denied',
+                        'HealthKit access was denied. You can enable it in Settings > Privacy & Security > Health.',
+                        [
+                            { text: 'Open Settings', onPress: () => Linking.openURL('app-settings:') },
+                            { text: 'Cancel', style: 'cancel' },
+                        ]
+                    );
+                }
+            } catch {
+                await updateHealthSyncStatus(false);
+            }
+        } else {
+            // Vartotojas nori IŠJUNGTI tavo appso fono sinchronizaciją (telefonas teises išlaiko)
+            Alert.alert(
+                'Disable Health Sync',
+                'Do you want to temporarily disable health metric syncing within Sage Wellness? To revoke full phone permissions, go to iOS Settings.',
+                [
+                    {
+                        text: 'Disable Sync',
+                        onPress: async () => await updateHealthSyncStatus(false)
+                    },
+                    {
+                        text: 'Open iOS Settings',
+                        onPress: () => Linking.openURL('app-settings:')
+                    },
+                    { text: 'Cancel', style: 'cancel' },
+                ]
+            );
+        }
+    };
+
+    const handleResearchToggle = async (value: boolean) => {
+        setResearchData(value);
+        await supabase.from('profiles').update({ share_research: value }).eq('id', user?.userId);
+        setUser({ ...user, shareResearch: value });
+    };
+
+    const handleLeaderboardToggle = async (value: boolean) => {
+        setLeaderboard(value);
+        await supabase.from('profiles').update({ leaderboard_enabled: value }).eq('id', user?.userId);
+        setUser({ ...user, leaderboardEnabled: value });
+    };
 
     const onChangePassword = () => {
         navigation.navigate('ChangePassword');
-    }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -61,23 +158,17 @@ const PrivacyScreen = () => {
                         <Text style={styles.sectionTitle}>Data Sharing</Text>
                     </View>
 
+                    {/* 🔥 Perduodam Zustand store reikšmę */}
                     <ToggleCard
                         title="Health Metric Sync"
                         description="Allow Sage to sync with Apple Health or Google Fit to track your daily steps and sleep patterns."
-                        value={healthSync}
-                        onValueChange={setHealthSync}
-                    />
-
-                    <ToggleCard
-                        title="Anonymized Research"
-                        description="Contribute your progress data to wellness research. All identifying information is permanently removed."
-                        value={researchData}
-                        onValueChange={setResearchData}
+                        value={!!healthSyncEnabled}
+                        onValueChange={handleHealthSyncToggle}
                     />
                 </View>
 
                 {/* --- Profile Visibility Section --- */}
-                <View style={styles.section}>
+                {/* <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <EyeIcon width={20} height={20} fill={THEME.colors.primary} />
                         <Text style={styles.sectionTitle}>Profile Visibility</Text>
@@ -95,9 +186,9 @@ const PrivacyScreen = () => {
                         title="Leaderboard Participation"
                         description="Show your name and score on weekly wellness challenges."
                         value={leaderboard}
-                        onValueChange={setLeaderboard}
+                        onValueChange={handleLeaderboardToggle}
                     />
-                </View>
+                </View> */}
 
                 {/* --- Account Security Section --- */}
                 <View style={styles.section}>
@@ -113,12 +204,6 @@ const PrivacyScreen = () => {
                         onPress={onChangePassword}
                     />
 
-                    {/* <SecurityButton
-                        title="Biometric Authentication"
-                        subtitle="FACEID / FINGERPRINT ENABLED"
-                        Icon={FingerprintIcon}
-                    /> */}
-
                     <TouchableOpacity style={styles.deleteButton}>
                         <TrashIcon width={16} height={16} fill={THEME.colors.error} />
                         <Text style={styles.deleteText}>Delete My Account</Text>
@@ -130,8 +215,7 @@ const PrivacyScreen = () => {
 };
 
 // --- Reusable Sub-Components ---
-
-const ToggleCard = ({ title, description, value, onValueChange }) => (
+const ToggleCard = ({ title, description, value, onValueChange }: { title: string; description: string; value: boolean; onValueChange: (v: boolean) => void }) => (
     <View style={styles.card}>
         <View style={styles.cardTextContainer}>
             <Text style={styles.cardTitle}>{title}</Text>
@@ -146,7 +230,7 @@ const ToggleCard = ({ title, description, value, onValueChange }) => (
     </View>
 );
 
-const SecurityButton = ({ title, subtitle, Icon, onPress }) => (
+const SecurityButton = ({ title, subtitle, Icon, onPress }: { title: string; subtitle: string; Icon: React.ComponentType<any>; onPress?: () => void }) => (
     <TouchableOpacity style={styles.actionCard} onPress={onPress}>
         <View style={styles.securityIconRow}>
             <View style={styles.securityIconCircle}>

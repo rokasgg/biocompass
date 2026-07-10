@@ -23,6 +23,7 @@ import { mapProfileFromDB } from "../utils/mapper";
 
 import ManifestationSelectionScreen from "../screens/ManifestationSelectionScreen";
 import SplashScreen from "../screens/SplashScreen";
+import FocusTimerScreen from "../screens/FocusTimerScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -206,6 +207,15 @@ export default function AppNavigator() {
                                 gestureEnabled: false, // Disable swipe back gesture
                             }}
                         />
+                        <Stack.Screen
+                            name="FocusTimer"
+                            component={FocusTimerScreen}
+                            options={{
+                                animation: 'slide_from_right',
+                                gestureEnabled: false, // Disable swipe back gesture
+                            }}
+                        />
+
 
 
                     </Stack.Group>

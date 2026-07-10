@@ -11,6 +11,8 @@ export const mapProfileFromDB = (dbProfile: any) => {
     phone: dbProfile.phone || '',
     avatarUrl: dbProfile.avatar_url || '',
     birthDate: dbProfile.birth_date || null,
+    shareResearch: dbProfile.share_research ?? false,
+    leaderboardEnabled: dbProfile.leaderboard_enabled ?? true,
   };
 };
 

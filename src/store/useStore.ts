@@ -18,6 +18,8 @@ export interface UserProfile {
     phone?: string;
     avatarUrl?: string;
     birthDate?: string | null;
+    shareResearch?: boolean;
+    leaderboardEnabled?: boolean;
 }
 
 export type AppState = AuthSlice & UserSlice & StatsSlice & UISlice

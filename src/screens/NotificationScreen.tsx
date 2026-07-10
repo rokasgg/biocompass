@@ -59,7 +59,7 @@ const NotificationSettingsScreen = ({ navigation }) => {
                         iconColor={THEME.colors.secondary}
                     />
 
-                    <NotificationItem
+                    {/* <NotificationItem
                         title="Community Updates"
                         sub="New challenges and shared goals"
                         value={community}
@@ -67,7 +67,7 @@ const NotificationSettingsScreen = ({ navigation }) => {
                         Icon={GroupsIcon}
                         iconBg={THEME.colors.tertiaryContainer}
                         iconColor={THEME.colors.tertiary}
-                    />
+                    /> */}
 
                     <NotificationItem
                         title="System Alerts"
@@ -93,7 +93,7 @@ const NotificationSettingsScreen = ({ navigation }) => {
                         <Text style={styles.focusSubtitle}>
                             Activate Focus mode to automatically silence all notifications during your scheduled meditation or deep-work hours.
                         </Text>
-                        <TouchableOpacity style={styles.focusButton}>
+                        <TouchableOpacity style={styles.focusButton} onPress={() => navigation.navigate('FocusTimer')}>
                             <Text style={styles.focusButtonText}>Enable Focus Mode</Text>
                         </TouchableOpacity>
                     </View>

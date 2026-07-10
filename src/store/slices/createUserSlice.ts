@@ -9,12 +9,15 @@ export interface UserSlice {
     setUserId: (id: string) => void,
     updateScore: (newScore: number) => void,
     syncFromDB: (dbData: any) => void,
+    healthSyncEnabled: boolean,
+    setHealthSyncEnabled: (enabled: boolean) => void,
 }
 
 export const createUserSlice: StateCreator<AppState, [], [], UserSlice> = (set) => ({
     user: null,
     userId: null,
     score: 0,
+    healthSyncEnabled: false,
 
     setUser: (userData) => set({
         user: userData,
@@ -35,6 +38,7 @@ export const createUserSlice: StateCreator<AppState, [], [], UserSlice> = (set) 
         stats: dbData.breathingStats || state.stats || { totalSessions: 0, byType: {}, history: [] },
         isLoggedIn: true,
         // Svarbiausia dalis: jei nėra vardo, vadinasi registracija nebaigta
-        userCompletedReg: !!dbData.profile?.firstName
+        userCompletedReg: !!dbData.profile?.firstName,
     })),
+    setHealthSyncEnabled: (enabled: boolean) => set({ healthSyncEnabled: enabled }),
 })
