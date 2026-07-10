@@ -161,7 +161,7 @@ const SettingsScreen = () => {
                     <Text style={styles.sectionHeader}>ACCOUNT SETTINGS</Text>
                     <View style={styles.settingsList}>
                         <SettingsItem icon={ProfileIcon} title="Personal Info" sub="Update your stats and data" onPress={() => navigation.navigate('PersonalInfo')} />
-                        <SettingsItem icon={MarkIcon} title="Health Goals" sub="Define your wellness targets" />
+                        {/* <SettingsItem icon={MarkIcon} title="Health Goals" sub="Define your wellness targets" /> */}
                         <SettingsItem icon={Bell2Icon} title="Notifications" sub="Manage alerts and reminders" onPress={() => navigation.navigate('Notifications')} />
                         <SettingsItem icon={LockIcon} title="Privacy" sub="Your data security & sharing" last onPress={() => navigation.navigate('Privacy')} />
                     </View>

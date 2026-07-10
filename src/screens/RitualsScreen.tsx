@@ -61,6 +61,25 @@ const RitualsScreen = () => {
 
         {/* --- Bento Grid: Rituals --- */}
         <View style={styles.bentoGrid}>
+          <LinearGradient
+            colors={[THEME.colors.primaryContainer, THEME.colors.primary]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.focusCard}
+          >
+            <View style={styles.focusContent}>
+              <LeafIcon width={32} height={32} fill="white" />
+              <Text style={styles.focusTitle}>Deep Work Mode</Text>
+              <Text style={styles.focusSubtitle}>
+                Activate Focus mode to automatically silence all notifications during your scheduled meditation or deep-work hours.
+              </Text>
+              <TouchableOpacity style={styles.focusButton} onPress={() => navigation.navigate('FocusTimer')}>
+                <Text style={styles.focusButtonText}>Enable Focus Mode</Text>
+              </TouchableOpacity>
+            </View>
+            {/* Subtle background glow effect */}
+            <View style={styles.cardGlow} />
+          </LinearGradient>
           {/* Guided Breathing */}
           <View style={styles.ritualCard}>
             <View style={styles.cardHeader}>
@@ -108,25 +127,7 @@ const RitualsScreen = () => {
 
           </View>
 
-          <LinearGradient
-            colors={[THEME.colors.primaryContainer, THEME.colors.primary]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.focusCard}
-          >
-            <View style={styles.focusContent}>
-              <LeafIcon width={32} height={32} fill="white" />
-              <Text style={styles.focusTitle}>Deep Work Mode</Text>
-              <Text style={styles.focusSubtitle}>
-                Activate Focus mode to automatically silence all notifications during your scheduled meditation or deep-work hours.
-              </Text>
-              <TouchableOpacity style={styles.focusButton} onPress={() => navigation.navigate('FocusTimer')}>
-                <Text style={styles.focusButtonText}>Enable Focus Mode</Text>
-              </TouchableOpacity>
-            </View>
-            {/* Subtle background glow effect */}
-            <View style={styles.cardGlow} />
-          </LinearGradient>
+
 
         </View>
 
@@ -202,7 +203,7 @@ const styles = StyleSheet.create({
   insightImage: { width: '100%', height: '100%' },
 
   focusCard: {
-    marginTop: 48,
+
     borderRadius: 24,
     padding: 32,
     overflow: 'hidden',

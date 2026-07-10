@@ -1,16 +1,136 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, Alert, } from 'react-native';
 import { THEME } from '../theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SunIcon, AnalyticsIcon, GroupsIcon, SettingsIcon, LeafIcon } from '../../assets/icons';
+import { SunIcon, AnalyticsIcon, SettingsIcon } from '../../assets/icons';
+import * as Notifications from 'expo-notifications';
+import { useStore } from '../store/useStore';
+import { supabase } from '../../backend/supabase';
 
-const NotificationSettingsScreen = ({ navigation }) => {
-    // State for toggles
-    const [reminders, setReminders] = useState(true);
-    const [reports, setReports] = useState(true);
-    const [community, setCommunity] = useState(false);
-    const [system, setSystem] = useState(true);
+// Sukonfigūruojam, kaip appsas elgiasi, kai notifikacija ateina jam esant atidarytam
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+    }),
+});
+
+const NotificationSettingsScreen = ({ navigation }: any) => {
+    // 📦 Zustand Store pajungimas (pataisyk kintamuosius pagal savo Store struktūrą)
+    const user = useStore(state => state.user);
+    const setUser = useStore(state => state.setUser);
+
+    // Būsenos jungikliams – pradžioje paima reikšmę iš Zustand, fallbackas – true
+    const [reminders, setReminders] = useState(user?.dailyRemindersEnabled ?? true);
+    const [reports, setReports] = useState(user?.weeklyReportsEnabled ?? true);
+    const [system, setSystem] = useState(user?.systemAlertsEnabled ?? true);
+
+    // Sinchronizuojam vietinį useState, jei user objektas store užsikrauna vėliau
+    useEffect(() => {
+        if (user) {
+            setReminders(user.dailyRemindersEnabled ?? true);
+            setReports(user.weeklyReportsEnabled ?? true);
+            setSystem(user.systemAlertsEnabled ?? true);
+        }
+    }, [user]);
+
+    // 🔔 1. HANDLERIS: Daily Reminders (Su Expo Push Token generavimu)
+    const handleDailyRemindersToggle = async (value: boolean) => {
+        // 1. Iškart pakeičiam vietinę būseną ir Zustand, kad UI reaguotų žaibiškai
+        setReminders(value);
+        setUser({ ...user, dailyRemindersEnabled: value });
+
+        // 2. Atnaujinam pagrindinį nustatymą Supabase duomenų bazėje
+        const { error: dbError } = await supabase
+            .from('profiles')
+            .update({ daily_reminders_enabled: value })
+            .eq('id', user?.userId);
+
+        if (dbError) console.error('Error updating daily reminders in DB:', dbError.message);
+
+        // 3. Jei vartotojas įjungia pranešimus, sutvarkom teises ir žetonus
+        if (value && user?.userId) {
+            try {
+                // Patikrinam, ar telefonas išvis leidžia siųsti notifikacijas
+                const { status: existingStatus } = await Notifications.getPermissionsAsync();
+                let finalStatus = existingStatus;
+
+                if (existingStatus !== 'granted') {
+                    const { status } = await Notifications.requestPermissionsAsync();
+                    finalStatus = status;
+                }
+
+                // Jei vartotojas griežtai pasakė NE sisteminiame lange
+                if (finalStatus !== 'granted') {
+                    Alert.alert(
+                        'Permissions Required',
+                        'Please enable notifications in your phone settings to receive daily wellness nudges.'
+                    );
+                    setReminders(false);
+                    setUser({ ...user, dailyRemindersEnabled: false });
+                    return;
+                }
+
+                // 🚀 SAUGIKLIS NUO KLAIDOS (Expo Go / Simulator apėjimas)
+                let token = `sandbox-token-${user.userId.slice(0, 8)}`; // default testinis žetonas
+
+                try {
+                    // Bandome paimti tikrąjį žetoną iš Apple/Google per Expo
+                    const tokenData = await Notifications.getExpoPushTokenAsync();
+                    token = tokenData.data;
+                    console.log('✅ Successfully fetched native Push Token:', token);
+                } catch (tokenError) {
+                    // Šitas blokas sugauna tavo turėtą "aps-environment" klaidą ir leidžia appe testuoti toliau!
+                    console.log('⚠️ Running via Expo Go or Simulator. Generated sandbox token for testing.');
+                }
+
+                // 4. Įrašome žetoną (tikrą arba testinį) į Supabase profilio lentelę
+                const { error: tokenUpdateError } = await supabase
+                    .from('profiles')
+                    .update({ expo_push_token: token })
+                    .eq('id', user.userId);
+
+                if (tokenUpdateError) {
+                    console.error('Error saving push token to Supabase:', tokenUpdateError.message);
+                } else {
+                    // Atnaujinam Zustand, kad appsas atmintyje turėtų šį kodą
+                    setUser({ ...user, dailyRemindersEnabled: true, expoPushToken: token });
+                }
+
+            } catch (err) {
+                console.error('Unexpected notification configuration error:', err);
+                setReminders(false);
+                setUser({ ...user, dailyRemindersEnabled: false });
+            }
+        }
+    };
+
+    // 📊 2. HANDLERIS: Weekly Reports
+    const handleWeeklyReportsToggle = async (value: boolean) => {
+        setReports(value);
+        setUser({ ...user, weeklyReportsEnabled: value });
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ weekly_reports_enabled: value })
+            .eq('id', user?.userId);
+
+        if (error) console.error('Error updating weekly reports:', error.message);
+    };
+
+    // ⚙️ 3. HANDLERIS: System Alerts
+    const handleSystemAlertsToggle = async (value: boolean) => {
+        setSystem(value);
+        setUser({ ...user, systemAlertsEnabled: value });
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ system_alerts_enabled: value })
+            .eq('id', user?.userId);
+
+        if (error) console.error('Error updating system alerts:', error.message);
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -23,7 +143,7 @@ const NotificationSettingsScreen = ({ navigation }) => {
                     <Text style={styles.headerTitle}>Sage Wellness</Text>
                 </View>
                 <TouchableOpacity style={styles.headerBtn}>
-                    <Text >...</Text>
+                    <Text>...</Text>
                 </TouchableOpacity>
             </View>
 
@@ -43,7 +163,7 @@ const NotificationSettingsScreen = ({ navigation }) => {
                         title="Daily Reminders"
                         sub="Morning focus and habit nudges"
                         value={reminders}
-                        onValueChange={setReminders}
+                        onValueChange={handleDailyRemindersToggle}
                         Icon={SunIcon}
                         iconBg={THEME.colors.primaryContainer}
                         iconColor={THEME.colors.primary}
@@ -53,64 +173,31 @@ const NotificationSettingsScreen = ({ navigation }) => {
                         title="Weekly Reports"
                         sub="Summary of your wellness journey"
                         value={reports}
-                        onValueChange={setReports}
+                        onValueChange={handleWeeklyReportsToggle}
                         Icon={AnalyticsIcon}
                         iconBg={THEME.colors.secondaryContainer}
                         iconColor={THEME.colors.secondary}
                     />
 
-                    {/* <NotificationItem
-                        title="Community Updates"
-                        sub="New challenges and shared goals"
-                        value={community}
-                        onValueChange={setCommunity}
-                        Icon={GroupsIcon}
-                        iconBg={THEME.colors.tertiaryContainer}
-                        iconColor={THEME.colors.tertiary}
-                    /> */}
-
                     <NotificationItem
                         title="System Alerts"
                         sub="Security and account notifications"
                         value={system}
-                        onValueChange={setSystem}
+                        onValueChange={handleSystemAlertsToggle}
                         Icon={SettingsIcon}
                         iconBg={THEME.colors.tabBackground}
                         iconColor={THEME.colors.onSurfaceVariant}
                     />
                 </View>
 
-                {/* --- Inspiration / Focus Card --- */}
-                <LinearGradient
-                    colors={[THEME.colors.primaryContainer, THEME.colors.primary]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.focusCard}
-                >
-                    <View style={styles.focusContent}>
-                        <LeafIcon width={32} height={32} fill="white" />
-                        <Text style={styles.focusTitle}>Deep Work Mode</Text>
-                        <Text style={styles.focusSubtitle}>
-                            Activate Focus mode to automatically silence all notifications during your scheduled meditation or deep-work hours.
-                        </Text>
-                        <TouchableOpacity style={styles.focusButton} onPress={() => navigation.navigate('FocusTimer')}>
-                            <Text style={styles.focusButtonText}>Enable Focus Mode</Text>
-                        </TouchableOpacity>
-                    </View>
-                    {/* Subtle background glow effect */}
-                    <View style={styles.cardGlow} />
-                </LinearGradient>
-
                 <Text style={styles.footerNote}>Changes are saved automatically.</Text>
-
             </ScrollView>
         </SafeAreaView>
     );
 };
 
 // --- Reusable Sub-component ---
-
-const NotificationItem = ({ title, sub, value, onValueChange, Icon, iconBg, iconColor }) => (
+const NotificationItem = ({ title, sub, value, onValueChange, Icon, iconBg, iconColor }: any) => (
     <View style={styles.navItem}>
         <View style={styles.navLeft}>
             <View style={[styles.iconCircle, { backgroundColor: iconBg }]}>
@@ -121,14 +208,13 @@ const NotificationItem = ({ title, sub, value, onValueChange, Icon, iconBg, icon
                 <Text style={styles.itemSub}>{sub}</Text>
             </View>
         </View>
-        <View style={styles.switchWrapper} pointerEvents="box-none">
-            <Switch
-                value={value}
-                onValueChange={onValueChange}
-                trackColor={{ false: THEME.colors.outlineVariant, true: THEME.colors.primary }}
-                ios_background_color={THEME.colors.outlineVariant}
-            />
-        </View>
+        <Switch
+            value={value}
+            onValueChange={onValueChange}
+            trackColor={{ false: THEME.colors.outlineVariant, true: THEME.colors.primary }}
+            thumbColor="#ffffff"
+            ios_backgroundColor={THEME.colors.outlineVariant}
+        />
     </View>
 );
 
@@ -162,10 +248,9 @@ const styles = StyleSheet.create({
         padding: 20,
         borderRadius: 24,
     },
-    navLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingRight: 72 },
+    navLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingRight: 16 },
     iconCircle: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
     textColumn: { flex: 1 },
-    switchWrapper: { position: 'absolute', right: 16, top: 0, bottom: 0, justifyContent: 'center', width: 56 },
     itemTitle: { fontSize: 16, fontWeight: '600', color: THEME.colors.onSurface },
     itemSub: { fontSize: 13, color: THEME.colors.onSurfaceVariant, marginTop: 2, flexWrap: 'wrap' },
 
