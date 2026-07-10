@@ -10,6 +10,7 @@ import {
     Dimensions,
     Platform,
     ActivityIndicator,
+    RefreshControl,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { THEME } from '../theme';
@@ -25,7 +26,14 @@ const { width } = Dimensions.get('window');
 const FeedbackScreen = () => {
 
     const user = useStore(state => state.user);
-    const { weeklyScores, statusMessage, detoxCard, yesterdayScreenTime, isLoading } = useWeeklyFeedback(user?.userId ?? '');
+    const { weeklyScores, statusMessage, detoxCard, yesterdayScreenTime, isLoading, refresh } = useWeeklyFeedback(user?.userId ?? '');
+    const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+    const onRefresh = async () => {
+        setIsRefreshing(true);
+        await refresh();
+        setIsRefreshing(false);
+    };
 
     if (isLoading) {
         return (
@@ -41,7 +49,11 @@ const FeedbackScreen = () => {
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={THEME.colors.primary} />}
+            >
 
                 {/* --- Hero Section --- */}
                 <View style={styles.heroSection}>

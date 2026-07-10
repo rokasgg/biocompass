@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     StyleSheet,
     View,
@@ -9,7 +9,8 @@ import {
     KeyboardAvoidingView,
     Platform,
     Dimensions,
-    Alert
+    Alert,
+    Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,10 +28,27 @@ import { mapProfileToDB } from '../utils/mapper';
 
 const { width } = Dimensions.get('window');
 
+const PROFILE_ICONS = [
+    require('../../assets/icons/profileIcons/wellness_icon_1.png'),
+    require('../../assets/icons/profileIcons/wellness_icon_2.png'),
+    require('../../assets/icons/profileIcons/wellness_icon_3.png'),
+    require('../../assets/icons/profileIcons/wellness_icon_4.png'),
+    require('../../assets/icons/profileIcons/wellness_icon_5.png'),
+    require('../../assets/icons/profileIcons/wellness_icon_6.png'),
+];
+
 const PersonalInfoScreen = () => {
     const navigation = useNavigation();
     const user = useStore(s => s.user ?? null);
     const setUser = useStore(s => s.setUser);
+    const [showIconPicker, setShowIconPicker] = useState(false);
+
+    const selectIcon = async (index: number) => {
+        setShowIconPicker(false);
+        const iconIndex = String(index);
+        await supabase.from('profiles').update({ avatar_url: iconIndex }).eq('id', user?.userId);
+        setUser({ ...user, avatarUrl: iconIndex });
+    };
 
     const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<AuthProfileFormData>({
         resolver: zodResolver(authProfileSchema),
@@ -96,10 +114,10 @@ const PersonalInfoScreen = () => {
                     <View style={styles.profileHeader}>
                         <View style={styles.avatarWrapper}>
                             <Image
-                                source={{ uri: 'https://avatar.iran.liara.run/public/woman' }}
+                                source={PROFILE_ICONS[parseInt(user?.avatarUrl ?? '0')] ?? PROFILE_ICONS[0]}
                                 style={styles.avatarImage}
                             />
-                            <TouchableOpacity style={styles.editBadge}>
+                            <TouchableOpacity style={styles.editBadge} onPress={() => setShowIconPicker(true)}>
                                 <Text style={{ fontSize: 12, color: 'white' }}>✎</Text>
                             </TouchableOpacity>
                         </View>
@@ -201,6 +219,21 @@ const PersonalInfoScreen = () => {
 
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            <Modal visible={showIconPicker} transparent animationType="fade" onRequestClose={() => setShowIconPicker(false)}>
+                <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowIconPicker(false)}>
+                    <View style={styles.iconPickerSheet}>
+                        <Text style={styles.iconPickerTitle}>Choose your avatar</Text>
+                        <View style={styles.iconGrid}>
+                            {PROFILE_ICONS.map((src, i) => (
+                                <TouchableOpacity key={i} onPress={() => selectIcon(i)} style={styles.iconOption}>
+                                    <Image source={src} style={styles.iconOptionImage} />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -276,7 +309,45 @@ const styles = StyleSheet.create({
     saveBtnText: { color: 'white', fontSize: 18, fontWeight: '800' },
     lastUpdated: { fontSize: 10, fontWeight: '700', color: THEME.colors.onSurfaceVariant, marginTop: 24, letterSpacing: 1 },
     backButton: { padding: 8 },
-    backArrow: { fontSize: 24, color: THEME.colors.primary }
+    backArrow: { fontSize: 24, color: THEME.colors.primary },
+
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'flex-end',
+    },
+    iconPickerSheet: {
+        backgroundColor: THEME.colors.background,
+        borderTopLeftRadius: THEME.radius.xl,
+        borderTopRightRadius: THEME.radius.xl,
+        padding: THEME.spacing.xl,
+        paddingBottom: 40,
+    },
+    iconPickerTitle: {
+        fontSize: THEME.fontSize.md,
+        fontWeight: '700',
+        color: THEME.colors.onSurface,
+        textAlign: 'center',
+        marginBottom: THEME.spacing.lg,
+    },
+    iconGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        gap: THEME.spacing.md,
+    },
+    iconOption: {
+        width: '30%',
+        aspectRatio: 1,
+        borderRadius: THEME.radius.lg,
+        overflow: 'hidden',
+        backgroundColor: THEME.colors.surfaceContainerLow,
+    },
+    iconOptionImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
 });
 
 export default PersonalInfoScreen;

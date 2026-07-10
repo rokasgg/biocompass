@@ -8,7 +8,8 @@ import {
     TouchableOpacity,
     StatusBar,
     Dimensions,
-    Platform
+    Platform,
+    Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
@@ -24,16 +25,26 @@ import LockIcon from '../../assets/icons/lock.svg';
 import SignOut from '../../assets/icons/signOut.svg';
 import { useNavigation } from '@react-navigation/native';
 import { useStore } from '../store/useStore';
-import { supabase } from '../../backend/supabase'
+import { supabase } from '../../backend/supabase';
 import BioLoader from '../compoments/BioLoader';
-
 const STREAK_GOALS = [7, 14, 30, 60, 90, 365];
+
+const PROFILE_ICONS = [
+    require('../../assets/icons/profileIcons/wellness_icon_1.png'),
+    require('../../assets/icons/profileIcons/wellness_icon_2.png'),
+    require('../../assets/icons/profileIcons/wellness_icon_3.png'),
+    require('../../assets/icons/profileIcons/wellness_icon_4.png'),
+    require('../../assets/icons/profileIcons/wellness_icon_5.png'),
+    require('../../assets/icons/profileIcons/wellness_icon_6.png'),
+];
+const DEFAULT_ICON = PROFILE_ICONS[0];
 
 const SettingsScreen = () => {
     const navigation = useNavigation();
     const tabBarHeight = useBottomTabBarHeight();
     const logout = useStore((s) => s.logout);
     const user = useStore(state => state.user);
+    const setUser = useStore((s: any) => s.setUser);
     const stats = useStore(s => s.stats);
     const score = useStore(s => s.score);
     const profileStreak = useStore((s: any) => s.profileStreak);
@@ -42,6 +53,7 @@ const SettingsScreen = () => {
     const setProfileData = useStore((s: any) => s.setProfileData);
 
     const [loading, setLoading] = useState(false);
+    const [showIconPicker, setShowIconPicker] = useState(false);
     const [streak, setStreak] = useState<number | null>(profileStreak);
     const currentGoal = STREAK_GOALS.find(goal => (streak ?? 0) < goal) || 365;
     const streakProgress = streak ? Math.min((streak / currentGoal) * 100, 100) : 0;
@@ -74,6 +86,15 @@ const SettingsScreen = () => {
         setProfileData({ streak: newStreak, sessionMinutes: newMinutes });
     };
 
+    const selectIcon = async (index: number) => {
+        setShowIconPicker(false);
+        const iconIndex = String(index);
+        await supabase.from('profiles').update({ avatar_url: iconIndex }).eq('id', user.userId);
+        setUser({ ...user, avatarUrl: iconIndex });
+    };
+
+    const avatarSource = PROFILE_ICONS[parseInt(user?.avatarUrl ?? '0')] ?? DEFAULT_ICON;
+
     const logoutHandler = async () => {
         setLoading(true);
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -91,13 +112,7 @@ const SettingsScreen = () => {
                 {/* --- Profile Hero Section --- */}
                 <View style={styles.heroSection}>
                     <View style={styles.avatarContainer}>
-                        <Image
-                            source={{ uri: 'https://avatar.iran.liara.run/public/woman' }}
-                            style={styles.mainAvatar}
-                        />
-                        <TouchableOpacity style={styles.editBadge}>
-                            <Text style={{ fontSize: 12, color: THEME.colors.onPrimaryContainer }}>✎</Text>
-                        </TouchableOpacity>
+                        <Image source={avatarSource} style={styles.mainAvatar} />
                     </View>
                     <Text style={styles.userName}>{user?.firstName} {user?.lastName}</Text>
                     <Text style={styles.membershipStatus}>Premium Wellness Member</Text>
@@ -167,6 +182,21 @@ const SettingsScreen = () => {
             </ScrollView>
 
             {/* --- Bottom Navigation --- */}
+
+            <Modal visible={showIconPicker} transparent animationType="fade" onRequestClose={() => setShowIconPicker(false)}>
+                <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowIconPicker(false)}>
+                    <View style={styles.iconPickerSheet}>
+                        <Text style={styles.iconPickerTitle}>Choose your avatar</Text>
+                        <View style={styles.iconGrid}>
+                            {PROFILE_ICONS.map((src, i) => (
+                                <TouchableOpacity key={i} onPress={() => selectIcon(i)} style={styles.iconOption}>
+                                    <Image source={src} style={styles.iconOptionImage} />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
 
         </SafeAreaView >
     );
@@ -473,6 +503,43 @@ const styles = StyleSheet.create({
         color: THEME.colors.secondary
     },
 
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'flex-end',
+    },
+    iconPickerSheet: {
+        backgroundColor: THEME.colors.background,
+        borderTopLeftRadius: THEME.radius.xl,
+        borderTopRightRadius: THEME.radius.xl,
+        padding: THEME.spacing.xl,
+        paddingBottom: 40,
+    },
+    iconPickerTitle: {
+        fontSize: THEME.fontSize.md,
+        fontWeight: '700',
+        color: THEME.colors.onSurface,
+        textAlign: 'center',
+        marginBottom: THEME.spacing.lg,
+    },
+    iconGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        gap: THEME.spacing.md,
+    },
+    iconOption: {
+        width: '30%',
+        aspectRatio: 1,
+        borderRadius: THEME.radius.lg,
+        overflow: 'hidden',
+        backgroundColor: THEME.colors.surfaceContainerLow,
+    },
+    iconOptionImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
 });
 
 export default SettingsScreen;

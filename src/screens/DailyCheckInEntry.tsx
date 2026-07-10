@@ -22,7 +22,7 @@ import { useStore } from '../store/useStore';
 import Check from '../../assets/icons/Check';
 import { checkInService } from '@backend/services/checkInService';
 import { supabase } from '@backend/supabase';
-import { useStatisticsForQuantity } from '@kingstinct/react-native-healthkit';
+import { useStatisticsForQuantity, requestAuthorization } from '@kingstinct/react-native-healthkit';
 import Face1 from '../../assets/icons/face1.svg';
 import Face2 from '../../assets/icons/face2.svg';
 import Face3 from '../../assets/icons/face3.svg';
@@ -60,6 +60,10 @@ const DailyCheckInEntry = () => {
 
     const dropAnim = useRef(new Animated.Value(0)).current;
     const [showConfirm, setShowConfirm] = useState(false);
+
+    useEffect(() => {
+        requestAuthorization({ toRead: ['HKQuantityTypeIdentifierStepCount'] } as any).catch(() => {});
+    }, []);
 
     const now = new Date();
     const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0);
