@@ -11,7 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { MailIcon, LockIcon, SendIcon, BackIcon } from '../../assets/icons';
+import { MailIcon, LockIcon, SendIcon, BackIcon, LeafIcon } from '../../assets/icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '../theme';
@@ -107,6 +107,27 @@ const RitualsScreen = () => {
             </View>}
 
           </View>
+
+          <LinearGradient
+            colors={[THEME.colors.primaryContainer, THEME.colors.primary]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.focusCard}
+          >
+            <View style={styles.focusContent}>
+              <LeafIcon width={32} height={32} fill="white" />
+              <Text style={styles.focusTitle}>Deep Work Mode</Text>
+              <Text style={styles.focusSubtitle}>
+                Activate Focus mode to automatically silence all notifications during your scheduled meditation or deep-work hours.
+              </Text>
+              <TouchableOpacity style={styles.focusButton} onPress={() => navigation.navigate('FocusTimer')}>
+                <Text style={styles.focusButtonText}>Enable Focus Mode</Text>
+              </TouchableOpacity>
+            </View>
+            {/* Subtle background glow effect */}
+            <View style={styles.cardGlow} />
+          </LinearGradient>
+
         </View>
 
         {/* --- Insights Section --- */}
@@ -159,6 +180,7 @@ const styles = StyleSheet.create({
   heroSummary: { fontSize: 16, color: THEME.colors.secondary, textAlign: 'center', maxWidth: 280, marginTop: 32, fontWeight: '500' },
 
   bentoGrid: { paddingHorizontal: 24, gap: 24 },
+
   ritualCard: { backgroundColor: THEME.colors.surfaceContainerLow, borderRadius: 24, padding: 32 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
   iconBox: { width: 56, height: 56, backgroundColor: 'white', borderRadius: 45, justifyContent: 'center', alignItems: 'center' },
@@ -177,7 +199,36 @@ const styles = StyleSheet.create({
   insightTitle: { fontSize: 32, fontWeight: '800', color: THEME.colors.onSurface, lineHeight: 38 },
   insightBody: { fontSize: 16, color: THEME.colors.onSurfaceVariant, lineHeight: 24 },
   insightImageWrapper: { flex: 1, height: 200, borderRadius: 24, overflow: 'hidden' },
-  insightImage: { width: '100%', height: '100%' }
+  insightImage: { width: '100%', height: '100%' },
+
+  focusCard: {
+    marginTop: 48,
+    borderRadius: 24,
+    padding: 32,
+    overflow: 'hidden',
+    ...THEME.shadows.editorial,
+  },
+  focusContent: { zIndex: 10 },
+  focusTitle: { color: 'white', fontSize: 24, fontWeight: '800', marginTop: 16, marginBottom: 8 },
+  focusSubtitle: { color: 'white', opacity: 0.8, fontSize: 14, lineHeight: 22, fontWeight: '500' },
+  focusButton: {
+    backgroundColor: THEME.colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 100,
+    alignSelf: 'flex-start',
+    marginTop: 24,
+  },
+  focusButtonText: { color: 'white', fontWeight: '800', fontSize: 14 },
+  cardGlow: {
+    position: 'absolute',
+    bottom: -60,
+    right: -60,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
 });
 
 export default RitualsScreen;

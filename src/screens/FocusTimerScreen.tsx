@@ -125,6 +125,14 @@ const FocusTimerScreen = () => {
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
+    const testButton = () => {
+        Alert.alert(
+            "Test Button Pressed",
+            "This is a test button. In a real scenario, this could be used to simulate user interaction or for debugging purposes.",
+            [{ text: "OK" }]
+        );
+        handleFocusSuccess(); // Simulate successful focus completion for testing
+    };
 
     return (
         <TouchableWithoutFeedback onPress={wakeScreen}>
@@ -132,7 +140,7 @@ const FocusTimerScreen = () => {
                 <Text style={styles.overline}>DEEP WORK INTEGRITY</Text>
                 <Text style={styles.statusText}>Phone Locked to Sage</Text>
 
-                <Text style={styles.timerText}>{formatTime(secondsLeft)}</Text>
+                <TouchableOpacity onPress={testButton}><Text style={styles.timerText}>{formatTime(secondsLeft)}</Text></TouchableOpacity>
 
                 <Text style={styles.subtitle}>
                     Do not lock your screen or leave the app. Leaving Sage to check notifications will instantly fail the session.

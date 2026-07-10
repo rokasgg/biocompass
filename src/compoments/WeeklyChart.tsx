@@ -4,7 +4,7 @@ import { THEME } from '../theme';
 import { NutritionIcon } from '../../assets/icons';
 
 const CHART_HEIGHT = 120;
-const MAX_SCORE = 145;
+const MAX_SCORE = 225;
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function getCurrentWeekDates(): string[] {
