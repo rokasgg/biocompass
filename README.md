@@ -9,8 +9,8 @@
    [(https://www.loom.com/share/fd9069b8dc4249dea3a4d115f8d13498)]
    
    ## Screenshots
-   <img src="assets/screenshots/home.png" width="200" />
-   <img src="assets/screenshots/home2" width="200" />
+   <img src="assets/screenshots/home.png" width="200" /> <img src="assets/screenshots/home2.png" width="200" />
+   
    <img src="assets/screenshots/rituals.png" width="200" />
    <img src="assets/screenshots/stats.png" width="200" />
    <img src="assets/screenshots/feedback.png" width="200" />
