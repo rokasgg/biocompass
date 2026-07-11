@@ -6,7 +6,7 @@
    biocompass
 
    ## Demo Video
-   [Loom link here]
+   [(https://www.loom.com/share/fd9069b8dc4249dea3a4d115f8d13498)]
    
    ## Screenshots
    ![App Home](assets/screenshots/home.png)
