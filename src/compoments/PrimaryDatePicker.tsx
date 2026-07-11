@@ -25,6 +25,10 @@ const PrimaryDatePicker = ({ label, value, onChange, placeHolder, error }: DateP
     const [show, setShow] = useState(false);
     const [tempDate, setTempDate] = useState(value || new Date());
 
+    useEffect(() => {
+        if (value) setTempDate(value);
+    }, [value]);
+
     const slideAnim = useState(new Animated.Value(300))[0];
 
 

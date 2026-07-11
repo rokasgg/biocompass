@@ -37,6 +37,13 @@ const PROFILE_ICONS = [
     require('../../assets/icons/profileIcons/wellness_icon_6.png'),
 ];
 
+const parseLocalDate = (input: string | Date | null | undefined): Date => {
+    if (!input) return new Date();
+    if (input instanceof Date) return input;
+    const [year, month, day] = input.split('-').map(Number);
+    return new Date(year, month - 1, day);
+};
+
 const PersonalInfoScreen = () => {
     const navigation = useNavigation();
     const user = useStore(s => s.user ?? null);
@@ -177,10 +184,12 @@ const PersonalInfoScreen = () => {
                             render={({ field: { onChange, value } }) => (
                                 <PrimaryDatePicker
                                     label="Birth Date"
-                                    value={value ? new Date(value) : new Date()}
+                                    value={parseLocalDate(value)}
                                     onChange={(selectedDate) => {
-                                        // Convert Date object back to string for the form state
-                                        onChange(selectedDate.toISOString().split('T')[0]);
+                                        const y = selectedDate.getFullYear();
+                                        const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                        const d = String(selectedDate.getDate()).padStart(2, '0');
+                                        onChange(`${y}-${m}-${d}`);
                                     }}
                                     error={errors.birthDate?.message}
                                 />
