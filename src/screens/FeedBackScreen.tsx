@@ -21,12 +21,13 @@ import { WeeklyChart } from 'src/compoments/WeeklyChart';
 import { useStore } from 'src/store/useStore';
 import { DetoxCard } from 'src/compoments/DetoxCard';
 import { useWeeklyFeedback } from 'src/hooks/useWeeklyFeedback';
+import { FocusTimeTracker } from 'src/compoments/FocusTimeTracker';
 const { width } = Dimensions.get('window');
 
 const FeedbackScreen = () => {
 
     const user = useStore(state => state.user);
-    const { weeklyScores, statusMessage, detoxCard, yesterdayScreenTime, isLoading, refresh } = useWeeklyFeedback(user?.userId ?? '');
+    const { weeklyScores, statusMessage, detoxCard, yesterdayScreenTime, weeklyFocusMinutes, isLoading, refresh } = useWeeklyFeedback(user?.userId ?? '');
     const [isRefreshing, setIsRefreshing] = React.useState(false);
 
     const onRefresh = async () => {
@@ -77,6 +78,8 @@ const FeedbackScreen = () => {
 
                         <WeeklyChart weeklyScores={weeklyScores} statusMessage={statusMessage} />
                         <DetoxCard detoxCard={detoxCard} yesterdayScreenTime={yesterdayScreenTime} />
+
+                        <FocusTimeTracker weeklyFocusMinutes={weeklyFocusMinutes} />
                     </View>
 
                     {/* Activity Chart Card (Full Width) */}
@@ -100,7 +103,7 @@ const FeedbackScreen = () => {
                 </View>
 
                 {/* --- Historical Insight List --- */}
-                <View style={styles.historySection}>
+                {/* <View style={styles.historySection}>
                     <View style={styles.historyHeader}>
                         <Text style={styles.historyTitle}>Historical Insight</Text>
                         <TouchableOpacity><Text style={styles.exportBtn}>Export Data</Text></TouchableOpacity>
@@ -109,7 +112,7 @@ const FeedbackScreen = () => {
                     <TrendRow icon={ScaleIcon} title="Metabolic Rate" sub="Stabilized at 1,840 kcal/day" trend="+2.4%" color={THEME.colors.tertiary} />
                     <TrendRow icon={HeartIcon} title="Resting Heart Rate" sub="Average 58 BPM" trend="-1.2%" color={THEME.colors.secondary} />
                     <TrendRow icon={BrainIcon} title="Cognitive Focus" sub="Peak focus at 10:15 AM" trend="+8.0%" color={THEME.colors.primary} />
-                </View>
+                </View> */}
 
                 {/* --- Quote Chip --- */}
                 <View style={styles.quoteChip}>

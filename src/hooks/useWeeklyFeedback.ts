@@ -21,7 +21,7 @@ export const useWeeklyFeedback = (userId: string) => {
 
             const { data, error } = await supabase
                 .from('daily_metrics')
-                .select('date, daily_score, screen_hours, sleep_hours')
+                .select('date, daily_score, screen_hours, sleep_hours, focus_minutes')
                 .eq('user_id', userId)
                 .order('date', { ascending: false })
                 .limit(7);
@@ -34,6 +34,7 @@ export const useWeeklyFeedback = (userId: string) => {
                     statusMessage: '⏳ Start your check-in rituals to unlock trends!',
                     detoxCard: null,
                     yesterdayScreenTime: null,
+                    weeklyFocusMinutes: 0,
                 });
                 return;
             }
@@ -90,11 +91,14 @@ export const useWeeklyFeedback = (userId: string) => {
                 newDetoxCard = { show: true, title: 'Digital Detox Focus', text, count };
             }
 
+            const weeklyFocusMinutes = data.reduce((sum, row) => sum + (row.focus_minutes ?? 0), 0);
+
             setWeeklyFeedback({
                 weeklyScores: formattedScores,
                 statusMessage: newStatusMessage,
                 detoxCard: newDetoxCard,
                 yesterdayScreenTime: data.length > 0 ? parseFloat(data[0].screen_hours || '0') : null,
+                weeklyFocusMinutes,
             });
 
         } catch (err) {
@@ -113,5 +117,7 @@ export const useWeeklyFeedback = (userId: string) => {
         fetchWeeklyData(isFirstLoad);
     }, [userId]);
 
-    return { weeklyScores, statusMessage, detoxCard, yesterdayScreenTime, isLoading, refresh: fetchWeeklyData };
+    const weeklyFocusMinutes = useStore((s: any) => s.weeklyFocusMinutes);
+
+    return { weeklyScores, statusMessage, detoxCard, yesterdayScreenTime, weeklyFocusMinutes, isLoading, refresh: fetchWeeklyData };
 };

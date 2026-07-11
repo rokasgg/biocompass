@@ -45,6 +45,7 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (set) 
         detoxCard: null,
         yesterdayScreenTime: null,
         weeklyFeedbackFetchedAt: null,
+        weeklyFocusMinutes: 0,
         profileStreak: null,
         mindfulMinutes: 0,
         profileDataFetchedAt: null,

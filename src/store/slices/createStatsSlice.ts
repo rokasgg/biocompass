@@ -54,11 +54,13 @@ export interface StatsSlice {
     detoxCard: DetoxCardData | null;
     yesterdayScreenTime: number | null;
     weeklyFeedbackFetchedAt: number | null;
+    weeklyFocusMinutes: number;
     setWeeklyFeedback: (payload: {
         weeklyScores: ChartDataPoint[];
         statusMessage: string;
         detoxCard: DetoxCardData | null;
         yesterdayScreenTime: number | null;
+        weeklyFocusMinutes: number;
     }) => void;
 
     // Profile / Settings cache
@@ -89,6 +91,7 @@ export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set
     detoxCard: null,
     yesterdayScreenTime: null,
     weeklyFeedbackFetchedAt: null,
+    weeklyFocusMinutes: 0,
 
     // Profile / Settings cache
     profileStreak: null,
@@ -151,6 +154,7 @@ export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set
         statusMessage: payload.statusMessage,
         detoxCard: payload.detoxCard,
         yesterdayScreenTime: payload.yesterdayScreenTime,
+        weeklyFocusMinutes: payload.weeklyFocusMinutes,
         weeklyFeedbackFetchedAt: Date.now(),
     }),
 
