@@ -24,3 +24,24 @@ export function buildInsightPrompt(metrics: any[] | null, yesterdayDate: string)
     }
     return `The user has no recent data logged. Give a calm, encouraging 1-2 sentence prompt to complete their check-in today. Do not mention missing data.`;
 }
+
+
+export async function getCachedInsight(userId: string, today: string) {
+    const { data, error } = await supabase
+        .from('daily_insights')
+        .select('insight_text')
+        .eq('user_id', userId)
+        .eq('date', today)
+        .maybeSingle();
+
+    if (error) throw error;
+    return data?.insight_text ?? null;
+}
+
+export async function saveInsight(userId: string, today: string, text: string) {
+    const { error } = await supabase
+        .from('daily_insights')
+        .upsert({ user_id: userId, date: today, insight_text: text });
+
+    if (error) throw error;
+}

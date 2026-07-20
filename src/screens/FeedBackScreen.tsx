@@ -15,7 +15,7 @@ import {
 import Svg, { Circle } from 'react-native-svg';
 import { THEME } from '../theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { HeartIcon, SleepIcon, NutritionIcon, ScaleIcon, BrainIcon } from '../../assets/icons';
+import { HeartIcon, SleepIcon, NutritionIcon, ScaleIcon, BrainIcon, SparkleIcon } from '../../assets/icons';
 import Header from '../compoments/HeaderBar';
 import { WeeklyChart } from 'src/compoments/WeeklyChart';
 import { useStore } from 'src/store/useStore';
@@ -32,8 +32,6 @@ const FeedbackScreen = () => {
     const [isRefreshing, setIsRefreshing] = React.useState(false);
 
     const { insight, error } = useDailyInsight(user?.userId ?? '');
-
-    console.log('prompt:', insight);
 
     const onRefresh = async () => {
         setIsRefreshing(true);
@@ -64,11 +62,24 @@ const FeedbackScreen = () => {
 
                 {/* --- Hero Section --- */}
                 <View style={styles.heroSection}>
-                    <Text style={styles.heroTitle}>Weekly Resonance</Text>
+
+                    <View style={styles.header}>
+                        <View style={styles.titleRow}>
+                            <SparkleIcon width={20} height={20} fill={THEME.colors.primary} />
+                            <Text style={styles.title}>Weekly resonance</Text>
+                        </View>
+                        <View style={styles.aiPill}>
+                            <SparkleIcon width={11} height={11} fill={THEME.colors.primary} />
+                            <Text style={styles.aiPillText}>AI insight</Text>
+                        </View>
+                    </View>
+
                     <Text style={styles.heroSubtitle}>
-                        Your bio-rhythms are aligning beautifully. You've maintained a consistent restorative state for 5 out of 7 days.
+                        {insight ? insight : "Loading your personalized insight..."}
                     </Text>
                 </View>
+
+
 
 
 
@@ -132,65 +143,11 @@ const FeedbackScreen = () => {
     );
 };
 
-// --- Sub-components ---
 
-const CircularProgress = ({ size, strokeWidth, progress, color }) => {
-    const radius = (size - strokeWidth) / 2;
-    const circumference = radius * 2 * Math.PI;
-    const offset = circumference - progress * circumference;
-
-    return (
-        <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
-            <Svg width={size} height={size}>
-                <Circle cx={size / 2} cy={size / 2} r={radius} stroke={THEME.colors.primaryContainer} strokeWidth={strokeWidth} fill="none" />
-                <Circle cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={strokeWidth}
-                    fill="none" strokeDasharray={`${circumference} ${circumference}`}
-                    strokeDashoffset={offset} strokeLinecap="round" rotation="-90" origin={`${size / 2}, ${size / 2}`} />
-            </Svg>
-            <View style={styles.circleInternal}>
-                <Text style={styles.circlePercent}>{Math.round(progress * 100)}%</Text>
-                <Text style={styles.circleLabel}>OPTIMAL</Text>
-            </View>
-        </View>
-    );
-};
-
-const HorizontalBar = ({ label, percentage, progress }) => (
-    <View style={styles.hBarContainer}>
-        <View style={styles.hBarHeader}>
-            <Text style={styles.hBarLabel}>{label}</Text>
-            <Text style={styles.hBarLabel}>{percentage}</Text>
-        </View>
-        <View style={styles.hBarBg}>
-            <View style={[styles.hBarFill, { width: `${progress * 100}%` }]} />
-        </View>
-    </View>
-);
-
-const Bar = ({ label, height, active }) => (
-    <View style={styles.barWrapper}>
-        <View style={[styles.barFill, { height: `${height}%`, backgroundColor: active ? THEME.colors.primaryContainer : THEME.colors.surfaceContainerHigh }]} />
-        <Text style={[styles.barLabel, active && { color: THEME.colors.primary }]}>{label}</Text>
-    </View>
-);
-
-const TrendRow = ({ icon: Icon, title, sub, trend, color }) => (
-    <View style={styles.trendRow}>
-        <View style={[styles.trendIcon, { backgroundColor: color + '20' }]}><Icon /></View>
-        <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.trendTitle}>{title}</Text>
-            <Text style={styles.trendSub}>{sub}</Text>
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-            <Text style={[styles.trendValue, { color: THEME.colors.primary }]}>{trend}</Text>
-            <Text style={styles.trendTag}>TREND</Text>
-        </View>
-    </View>
-);
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: THEME.colors.background },
     globalLoader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: { height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, backgroundColor: THEME.colors.surfaceContainerLow },
+    header: { height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
     headerLeft: { flexDirection: 'row', alignItems: 'center' },
     avatarMiniContainer: { width: 32, height: 32, borderRadius: 16, overflow: 'hidden', backgroundColor: THEME.colors.surfaceContainerHighest },
     miniAvatar: { width: '100%', height: '100%' },
@@ -199,8 +156,13 @@ const styles = StyleSheet.create({
     scrollContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 100 },
 
     heroSection: { marginBottom: 32 },
+    heroTitleSection: { flexDirection: 'row', marginBottom: 16, gap: 8 },
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    title: { fontSize: 20, fontWeight: '600', color: THEME.colors.primary },
+    aiPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.colors.pastelGreen, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+    aiPillText: { fontSize: 10, fontWeight: '600', color: THEME.colors.primary, marginLeft: 4 },
     heroTitle: { fontSize: 16, fontWeight: '800', color: THEME.colors.secondary, marginBottom: 8 },
-    heroSubtitle: { fontSize: 16, color: THEME.colors.onSurfaceVariant, lineHeight: 22 },
+    heroSubtitle: { fontSize: 16, color: THEME.colors.onSurfaceVariant, lineHeight: 22, marginBottom: 16, paddingHorizontal: 20 },
 
     bentoGrid: { marginBottom: 32 },
     row: { flexDirection: 'column', justifyContent: 'space-between', marginBottom: 20 },

@@ -54,6 +54,8 @@ const HomeScreen = () => {
     const [isLoadingDb, setIsLoadingDb] = useState<boolean>(true);
     const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
+
+
     const loadData = async () => {
         try {
             setIsLoadingDb(true);
@@ -100,6 +102,8 @@ const HomeScreen = () => {
                         'HKCategoryTypeIdentifierSleepAnalysis'
                     ]
                 } as any);
+                const { data } = await supabase.auth.getSession();
+                console.log('gaidzin', data.session?.access_token);
                 setIsAuthorized(authorized);
             } catch (e: any) {
                 console.error("HealthKit authorization error:", e);
