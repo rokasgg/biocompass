@@ -22,6 +22,7 @@ import { useStore } from 'src/store/useStore';
 import { DetoxCard } from 'src/compoments/DetoxCard';
 import { useWeeklyFeedback } from 'src/hooks/useWeeklyFeedback';
 import { FocusTimeTracker } from 'src/compoments/FocusTimeTracker';
+import { useDailyInsight } from 'src/hooks/useDailyInsights';
 const { width } = Dimensions.get('window');
 
 const FeedbackScreen = () => {
@@ -30,11 +31,16 @@ const FeedbackScreen = () => {
     const { weeklyScores, statusMessage, detoxCard, yesterdayScreenTime, weeklyFocusMinutes, isLoading, refresh } = useWeeklyFeedback(user?.userId ?? '');
     const [isRefreshing, setIsRefreshing] = React.useState(false);
 
+    const { insight, error } = useDailyInsight(user?.userId ?? '');
+
+    console.log('prompt:', insight);
+
     const onRefresh = async () => {
         setIsRefreshing(true);
         await refresh();
         setIsRefreshing(false);
     };
+
 
     if (isLoading) {
         return (
