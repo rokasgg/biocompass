@@ -20,7 +20,8 @@
       },
       "infoPlist": {
         "NSLocalNetworkUsageDescription": "HabTra needs access to your local network to connect to the Expo development server.",
-        "NSPhotoLibraryUsageDescription": "HabTra needs access to your photo library so you can set a profile picture."
+        "NSPhotoLibraryUsageDescription": "HabTra needs access to your photo library so you can set a profile picture.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -30,7 +31,10 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.brocool.HabTra"
+      "package": "com.brocool.HabTra",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       "expo-dev-client",
@@ -46,7 +50,7 @@
         {
           "healthShareUsageDescription": "We need your steps and sleep data to personalize your wellness journey.",
           "healthUpdateUsageDescription": "We use your data to help you visualize your progress."
-        },
+        }
       ],
       [
         "expo-build-properties",
@@ -56,6 +60,11 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "aed8083d-0756-4668-bd79-90fde7881144"
+      }
+    }
   }
 }
