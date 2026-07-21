@@ -19,6 +19,7 @@ import ModalConfirmation from '../compoments/ModalConfirmation';
 import { useStore } from '../store/useStore';
 import ModalInformation from 'src/compoments/ModalInfo';
 import { supabase } from '@backend/supabase';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 
 const { width } = Dimensions.get('window');
 
@@ -238,6 +239,15 @@ const BreathingSessionScreen = () => {
 
         return () => clearInterval(interval);
     }, [isRunning, durationSecs]);
+
+    useEffect(() => {
+        if (isRunning) {
+            activateKeepAwakeAsync();
+        } else {
+            deactivateKeepAwake();
+        }
+        return () => { deactivateKeepAwake(); };
+    }, [isRunning]);
 
     const displaySeconds = Math.min(Math.round((progress / 100) * durationSecs), durationSecs);
     const bgProgress = bgAnimValue;
