@@ -271,14 +271,14 @@ const BreathingSessionScreen = () => {
     }
 
     const handleStartSession = () => {
+        setIsStarted(true);
+        setIsRunning(true);
         Animated.timing(readyOpacity, {
             toValue: 0,
             duration: 400,
             useNativeDriver: true,
         }).start(() => {
             setReadyVisible(false);
-            setIsStarted(true);
-            setIsRunning(true);
         });
     };
 
@@ -314,7 +314,7 @@ const BreathingSessionScreen = () => {
                                     {isStarted ? phase : "GO"}
                                 </Text>
                                 <Text style={[styles.timerText, { color: '#FFF9C4' }]}>
-                                    {isStarted ? `${phaseCountdown} ` : "1 Min Session"}
+                                    {isStarted ? `${phaseCountdown} ` : `${Math.round(sessionDuration / 60)} Min Session`}
                                 </Text>
                             </LinearGradient>
                         </Animated.View>
