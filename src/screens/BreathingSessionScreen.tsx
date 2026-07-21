@@ -40,6 +40,7 @@ const BreathingSessionScreen = () => {
 
     const breathingType = (route.params as { breathingType?: string })?.breathingType ?? 'coherent';
     const user = useStore(state => state.user);
+    const addMindfulMinutes = useStore((s: any) => s.addMindfulMinutes);
 
     const fromCheckIn = (route.params as { fromCheckIn?: boolean })?.fromCheckIn ?? false;
     const passedDuration = (route.params as { duration?: number })?.duration;
@@ -207,8 +208,7 @@ const BreathingSessionScreen = () => {
                 rituals_count: newMinutes
             }, { onConflict: 'user_id, date' });
 
-
-
+        addMindfulMinutes(sessionMinutes);
     }
 
     // Finišo sekimas (suveikia TIK jei sąžiningai pabaigia kvėpuoti)

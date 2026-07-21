@@ -118,6 +118,8 @@ const DailyCheckInEntry = () => {
 
     // --- SUBMIT LOGIKA ---
 
+    const invalidateProfileCache = useStore((s: any) => s.invalidateProfileCache);
+
     const handleSubmitCheckIn = async () => {
         console.log('Fire123')
         setIsLoading(true);
@@ -146,6 +148,7 @@ const DailyCheckInEntry = () => {
 
             // Siunčiame į servisą
             await checkInService.submitDailyMetrics(user.id, payload);
+            invalidateProfileCache();
 
             // Viskas pavyko, einame toliau
             navigation.replace('BreathingSession', {

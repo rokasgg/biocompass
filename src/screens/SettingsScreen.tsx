@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
     StyleSheet,
     View,
@@ -23,7 +23,7 @@ import MarkIcon from '../../assets/icons/mark.svg';
 import Bell2Icon from '../../assets/icons/bell2.svg';
 import LockIcon from '../../assets/icons/lock.svg';
 import SignOut from '../../assets/icons/signOut.svg';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useStore } from '../store/useStore';
 import { supabase } from '../../backend/supabase';
 import BioLoader from '../compoments/BioLoader';
@@ -59,13 +59,15 @@ const SettingsScreen = () => {
     const streakProgress = streak ? Math.min((streak / currentGoal) * 100, 100) : 0;
     const [sessionMinutes, setSessionMinutes] = useState<number>(mindfulMinutes);
 
-    useEffect(() => {
-        if (!user?.userId) return;
-        const ONE_HOUR = 60 * 60 * 1000;
-        const isStale = !profileDataFetchedAt || Date.now() - profileDataFetchedAt > ONE_HOUR;
-        if (!isStale) return;
-        loadProfileData();
-    }, [user?.userId]);
+    useFocusEffect(
+        React.useCallback(() => {
+            if (!user?.userId) return;
+            const ONE_HOUR = 60 * 60 * 1000;
+            const isStale = !profileDataFetchedAt || Date.now() - profileDataFetchedAt > ONE_HOUR;
+            if (!isStale) return;
+            loadProfileData();
+        }, [user?.userId, profileDataFetchedAt])
+    );
 
     const loadProfileData = async () => {
         if (!user?.userId) return;

@@ -68,6 +68,8 @@ export interface StatsSlice {
     mindfulMinutes: number;
     profileDataFetchedAt: number | null;
     setProfileData: (payload: { streak: number | null; sessionMinutes: number }) => void;
+    invalidateProfileCache: () => void;
+    addMindfulMinutes: (minutes: number) => void;
 }
 
 export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set) => ({
@@ -148,6 +150,12 @@ export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set
         mindfulMinutes: payload.sessionMinutes,
         profileDataFetchedAt: Date.now(),
     }),
+
+    invalidateProfileCache: () => set({ profileDataFetchedAt: null }),
+
+    addMindfulMinutes: (minutes) => set((state: any) => ({
+        mindfulMinutes: (state.mindfulMinutes ?? 0) + minutes,
+    })),
 
     setWeeklyFeedback: (payload) => set({
         weeklyScores: payload.weeklyScores,
