@@ -18,6 +18,7 @@ import { THEME } from '../theme';
 import ModalConfirmation from '../compoments/ModalConfirmation';
 import { useStore } from '../store/useStore';
 import ModalInformation from 'src/compoments/ModalInfo';
+import ConfettiBurst from 'src/compoments/ConfettiBurst';
 import { supabase } from '@backend/supabase';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 
@@ -359,13 +360,13 @@ const BreathingSessionScreen = () => {
 
             }
 
+            {isCompleted && isStarted && progress >= 100 && <ConfettiBurst />}
             {isCompleted && isStarted && progress >= 100 &&
                 <ModalInformation
                     title='You completed the session!'
                     description="Great job! You ve completed your breathing session. Take a moment to notice how you feel and carry this calmness with you throughout the day."
                     primaryButtonDetails={{ text: 'Go Home', onPress: redirectToHome }}
                 />
-
             }
         </SafeAreaView>
     );
