@@ -166,7 +166,17 @@ const DailyCheckInEntry = () => {
         setPath(selectedPath);
     }
 
-
+    const canProceed: boolean = (() => {
+        if (step === 0) return true;
+        if (currentPhase === 'morning') {
+            if (step === 1) return path !== '';
+            if (step === 2) return manifestation.trim() !== '';
+        }
+        if (currentPhase === 'evening') {
+            if (step === 2) return emojiIndex !== null;
+        }
+        return true;
+    })();
 
     return (
         <SafeAreaView style={styles.container}>
@@ -392,7 +402,7 @@ const DailyCheckInEntry = () => {
             {/* Fixed Footer */}
             <View style={styles.footer}>
                 {step < maxSteps ? (
-                    <TouchableOpacity style={styles.footerButton} onPress={() => setStep((s) => s + 1)}>
+                    <TouchableOpacity style={[styles.footerButton, !canProceed && styles.footerButtonDisabled]} disabled={!canProceed} onPress={() => setStep((s) => s + 1)}>
                         <Text style={styles.buttonText}>
                             {step === 0 ? "Let's Begin" : "Next Step"}
                         </Text>
@@ -445,6 +455,7 @@ const styles = StyleSheet.create({
     emojiText: { fontSize: 22 },
     footer: { position: 'absolute', left: 24, right: 24, bottom: Platform.OS === 'ios' ? 34 : 24 },
     footerButton: { backgroundColor: THEME.colors.primary, paddingVertical: 16, borderRadius: 28, alignItems: 'center', ...THEME.shadows.editorial },
+    footerButtonDisabled: { opacity: 0.4 },
     buttonText: { color: 'white', fontSize: 16, fontWeight: '800' },
 
     // Papildomi nauji stiliai

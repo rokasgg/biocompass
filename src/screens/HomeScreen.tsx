@@ -34,6 +34,7 @@ const HomeScreen = () => {
     // 1. Išsitraukiam iš Store, ar checkinai jau padaryti!
     // (Pridėk juos į savo store. Jei dar nepridėjai, kol kas gali naudoti useState testavimui)
     const score = useStore((state) => state.score);
+    const user = useStore((state) => state.user);
 
     const navigation = useNavigation();
     const [error, setError] = useState<string | null>(null);
@@ -57,22 +58,20 @@ const HomeScreen = () => {
 
 
     const loadData = async () => {
+        const uid = user?.userId;
+        if (!uid) return;
         try {
             setIsLoadingDb(true);
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const data = await checkInService.getUserDashboardData(user.id);
-                console.log("Gauti duomenys iš checkInService:", data);
+            const data = await checkInService.getUserDashboardData(uid);
 
-                const fetched = data.todayMetrics?.daily_score || 0;
-                setDailyScore(fetched);
-                storeDailyScore(fetched);
-                if (data.todayMetrics?.morning_completed) completeMorningCheckIn();
-                if (data.todayMetrics?.evening_completed) completeEveningCheckIn();
+            const fetched = data.todayMetrics?.daily_score || 0;
+            setDailyScore(fetched);
+            storeDailyScore(fetched);
+            if (data.todayMetrics?.morning_completed) completeMorningCheckIn();
+            if (data.todayMetrics?.evening_completed) completeEveningCheckIn();
 
-                const hours = data.todayMetrics?.screen_hours || 0;
-                setScreenTimeMinutes(Math.round(hours * 60));
-            }
+            const hours = data.todayMetrics?.screen_hours || 0;
+            setScreenTimeMinutes(Math.round(hours * 60));
         } catch (err) {
             console.error("Nepavyko užkrauti duomenų:", err);
         } finally {
@@ -86,12 +85,15 @@ const HomeScreen = () => {
         setIsRefreshing(false);
     };
 
+    // Triggers on cold start / login once Zustand rehydrates user from AsyncStorage
+    useEffect(() => {
+        if (user?.userId) loadData();
+    }, [user?.userId]);
+
     useFocusEffect(React.useCallback(() => {
         checkAndResetDaily();
         loadData();
-    }, []));
-
-
+    }, [user?.userId]));
 
     useEffect(() => {
         const requestHealthKitPermissions = async () => {
@@ -138,13 +140,6 @@ const HomeScreen = () => {
     // const vitalityPercentage = Math.min(Math.round((dailyScore / maxAvailableScore) * 100), 100);
     const vitalityPercentage = Math.min(Math.round((dailyScore / maxAvailableScore) * 100), 100);
 
-
-    useFocusEffect(
-        React.useCallback(() => {
-            console.log("Ekranas sufokusuotas - kraunam duomenis...");
-            loadData();
-        }, [])
-    );
 
 
     useEffect(() => {
