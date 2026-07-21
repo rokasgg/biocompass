@@ -61,7 +61,7 @@ const FeedbackScreen = () => {
             >
 
                 {/* --- Hero Section --- */}
-                <View style={styles.heroSection}>
+                {/* <View style={styles.heroSection}>
 
                     <View style={styles.header}>
                         <View style={styles.titleRow}>
@@ -75,6 +75,22 @@ const FeedbackScreen = () => {
                     </View>
 
                     <Text style={styles.heroSubtitle}>
+                        {insight ? insight : "Loading your personalized insight..."}
+                    </Text>
+                </View> */}
+
+                <View style={styles.quoteChip}>
+                    <View style={styles.header}>
+                        <View style={styles.titleRow}>
+                            <SparkleIcon width={20} height={20} fill={THEME.colors.primary} />
+                            <Text style={styles.title}>Weekly resonance</Text>
+                        </View>
+                        <View style={styles.aiPill}>
+                            <SparkleIcon width={11} height={11} fill={THEME.colors.primary} />
+                            <Text style={styles.aiPillText}>AI insight</Text>
+                        </View>
+                    </View>
+                    <Text style={styles.quoteText}>
                         {insight ? insight : "Loading your personalized insight..."}
                     </Text>
                 </View>
@@ -132,11 +148,7 @@ const FeedbackScreen = () => {
                 </View> */}
 
                 {/* --- Quote Chip --- */}
-                <View style={styles.quoteChip}>
-                    <Text style={styles.quoteText}>
-                        "Rest is not idleness, and to lie sometimes on the grass under trees... is by no means a waste of time."
-                    </Text>
-                </View>
+
 
             </ScrollView>
         </SafeAreaView>
@@ -147,7 +159,7 @@ const FeedbackScreen = () => {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: THEME.colors.background },
     globalLoader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: { height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
     headerLeft: { flexDirection: 'row', alignItems: 'center' },
     avatarMiniContainer: { width: 32, height: 32, borderRadius: 16, overflow: 'hidden', backgroundColor: THEME.colors.surfaceContainerHighest },
     miniAvatar: { width: '100%', height: '100%' },
@@ -204,8 +216,8 @@ const styles = StyleSheet.create({
     trendValue: { fontWeight: '600' },
     trendTag: { fontSize: 10, fontWeight: '600', color: THEME.colors.outline },
 
-    quoteChip: { backgroundColor: 'rgba(125, 82, 95, 0.08)', padding: 24, borderRadius: 16, alignItems: 'center' },
-    quoteText: { fontStyle: 'italic', textAlign: 'center', color: THEME.colors.tertiary, fontSize: 14, lineHeight: 20 }
+    quoteChip: { backgroundColor: 'rgba(125, 82, 95, 0.08)', padding: 24, borderRadius: 16, marginBottom: 32 },
+    quoteText: { fontStyle: 'italic', textAlign: 'auto', color: THEME.colors.tertiary, fontSize: 14, lineHeight: 20, }
 });
 
 export default FeedbackScreen;

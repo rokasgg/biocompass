@@ -16,7 +16,7 @@ const Tab = createBottomTabNavigator();
 export default function MainTabNavigator() {
     const SCREEN_WIDTH = Dimensions.get('window').width;
 
-    const TAB_WIDTH = Math.floor(SCREEN_WIDTH / 5);
+    const TAB_WIDTH = Math.floor(SCREEN_WIDTH / 4);
 
 
     return (
