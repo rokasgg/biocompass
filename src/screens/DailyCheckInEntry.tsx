@@ -53,6 +53,7 @@ const DailyCheckInEntry = () => {
     const [paidCompliment, setPaidCompliment] = useState(false);
 
     const [screenHours, setScreenHours] = useState<number>(2);
+    const [screenHoursTouched, setScreenHoursTouched] = useState(false);
     const [emojiIndex, setEmojiIndex] = useState<number | null>(null);
     const [noSugar, setNoSugar] = useState(false);
     const [stretched, setStretched] = useState(false);
@@ -73,6 +74,8 @@ const DailyCheckInEntry = () => {
     // --- Morning Check-In State ---
     const [path, setPath] = useState('');
     const [manifestation, setManifestation] = useState('');
+
+    const invalidateProfileCache = useStore((s: any) => s.invalidateProfileCache);
 
     const handleBackPress = () => {
         if (step > 1) setStep((s) => s - 1);
@@ -117,8 +120,6 @@ const DailyCheckInEntry = () => {
     const maxSteps = currentPhase === 'morning' ? 3 : 3;
 
     // --- SUBMIT LOGIKA ---
-
-    const invalidateProfileCache = useStore((s: any) => s.invalidateProfileCache);
 
     const handleSubmitCheckIn = async () => {
         console.log('Fire123')
@@ -176,6 +177,7 @@ const DailyCheckInEntry = () => {
             if (step === 2) return manifestation.trim() !== '';
         }
         if (currentPhase === 'evening') {
+            if (step === 1) return screenHoursTouched;
             if (step === 2) return emojiIndex !== null;
         }
         return true;
@@ -322,7 +324,7 @@ const DailyCheckInEntry = () => {
                                             maximumTrackTintColor="#E2E8F0"
                                             thumbTintColor={THEME.colors.primary}
                                             value={screenHours}
-                                            onValueChange={setScreenHours}
+                                            onValueChange={(v) => { setScreenHours(v); setScreenHoursTouched(true); }}
                                         />
                                         {Platform.OS === 'ios' && (
                                             <TouchableOpacity style={styles.linkButton} onPress={async () => {

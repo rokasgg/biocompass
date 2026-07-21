@@ -4,6 +4,7 @@ import { THEME } from '../theme';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../backend/supabase';
 import { useStore } from '../store/useStore';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 
 const FOCUS_DURATION = 25 * 60; // 25 minutės sekundėmis
 
@@ -133,6 +134,15 @@ const FocusTimerScreen = () => {
         );
         handleFocusSuccess(); // Simulate successful focus completion for testing
     };
+
+    useEffect(() => {
+        if (isActive) {
+            activateKeepAwakeAsync();
+        } else {
+            deactivateKeepAwake();
+        }
+        return () => { deactivateKeepAwake(); };
+    }, [isActive]);
 
     return (
         <TouchableWithoutFeedback onPress={wakeScreen}>
