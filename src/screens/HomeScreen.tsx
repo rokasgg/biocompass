@@ -57,6 +57,9 @@ const HomeScreen = () => {
     const [screenTimeMinutes, setScreenTimeMinutes] = useState<number>(0);
     const [isLoadingDb, setIsLoadingDb] = useState<boolean>(true);
     const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+    const [morningTheme, setMorningTheme] = useState<string | null>(null);
+    const [morningFocus, setMorningFocus] = useState<string | null>(null);
+    const [morningHabits, setMorningHabits] = useState({ water: false, meditated: false, compliment: false });
 
 
 
@@ -75,6 +78,13 @@ const HomeScreen = () => {
 
             const hours = data.todayMetrics?.screen_hours || 0;
             setScreenTimeMinutes(Math.round(hours * 60));
+            setMorningTheme(data.todayMetrics?.morning_theme ?? null);
+            setMorningFocus(data.todayMetrics?.morning_focus ?? null);
+            setMorningHabits({
+                water: !!data.todayMetrics?.drank_water,
+                meditated: !!data.todayMetrics?.meditated,
+                compliment: !!data.todayMetrics?.paid_compliment,
+            });
         } catch (err) {
             console.error("Nepavyko užkrauti duomenų:", err);
         } finally {
@@ -305,6 +315,34 @@ const HomeScreen = () => {
                     })()} badge={screenTimeMinutes ? 'Manual Input' : '—'} progress={Math.min((screenTimeMinutes || 0) / (12 * 60), 1)} />}
                 </View>
 
+                {/* --- Today's Intention Card --- */}
+                {hasCompletedMorningCheckIn && morningTheme && (
+                    <View style={styles.intentionCard}>
+                        <View style={styles.intentionHeader}>
+                            <Text style={styles.intentionOverline}>TODAY'S INTENTION</Text>
+                            <View style={styles.themeBadge}>
+                                <Text style={styles.themeBadgeText}>{morningTheme}</Text>
+                            </View>
+                        </View>
+                        {morningFocus ? (
+                            <Text style={styles.intentionQuote}>"{morningFocus}"</Text>
+                        ) : null}
+                        <View style={styles.habitsRow}>
+                            {[
+                                { label: 'Water', done: morningHabits.water },
+                                { label: 'Meditation', done: morningHabits.meditated },
+                                { label: 'Kindness', done: morningHabits.compliment },
+                            ].map(h => (
+                                <View key={h.label} style={[styles.habitChip, h.done && styles.habitChipDone]}>
+                                    <Text style={[styles.habitChipText, h.done && styles.habitChipTextDone]}>
+                                        {h.done ? '✓ ' : ''}{h.label}
+                                    </Text>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+                )}
+
                 {/* --- Nukreipimo skiltis --- */}
                 <View style={styles.inspirationCard}>
                     <View style={styles.inspirationTextContent}>
@@ -347,6 +385,18 @@ const styles = StyleSheet.create({
     primaryButton: { backgroundColor: THEME.colors.primary, paddingVertical: THEME.spacing.md, paddingHorizontal: THEME.spacing.xl, borderRadius: THEME.radius.full, alignSelf: 'flex-start' },
     buttonText: { color: THEME.colors.white, fontWeight: '700' },
     inspirationTextContent: { flex: 1, alignItems: 'flex-start', justifyContent: 'center' },
+
+    intentionCard: { backgroundColor: THEME.colors.white, borderRadius: THEME.radius.lg, padding: THEME.spacing.xl, marginTop: THEME.spacing.sm },
+    intentionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+    intentionOverline: { fontSize: 11, fontWeight: '800', color: THEME.colors.primary, letterSpacing: 1.5 },
+    themeBadge: { backgroundColor: THEME.colors.primary + '18', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+    themeBadgeText: { fontSize: 12, fontWeight: '700', color: THEME.colors.primary },
+    intentionQuote: { fontSize: 15, fontStyle: 'italic', color: THEME.colors.onSurface, lineHeight: 22, marginBottom: 16 },
+    habitsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+    habitChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: THEME.colors.outline },
+    habitChipDone: { backgroundColor: THEME.colors.primary + '12', borderColor: THEME.colors.primary },
+    habitChipText: { fontSize: 12, fontWeight: '600', color: THEME.colors.onSurfaceVariant },
+    habitChipTextDone: { color: THEME.colors.primary },
 });
 
 export default HomeScreen;
