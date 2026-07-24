@@ -28,10 +28,15 @@ const { width } = Dimensions.get('window');
 const FeedbackScreen = () => {
 
     const user = useStore(state => state.user);
+    const hasCompletedMorningCheckIn = useStore((state: any) => state.hasCompletedMorningCheckIn);
     const { weeklyScores, statusMessage, detoxCard, yesterdayScreenTime, weeklyFocusMinutes, isLoading, refresh } = useWeeklyFeedback(user?.userId ?? '');
     const [isRefreshing, setIsRefreshing] = React.useState(false);
 
-    const { insight, error } = useDailyInsight(user?.userId ?? '');
+    const { insight, error } = useDailyInsight(hasCompletedMorningCheckIn ? (user?.userId ?? '') : '');
+
+    const insightText = hasCompletedMorningCheckIn
+        ? (insight ?? "Loading your personalized insight...")
+        : "Complete your morning check-in to unlock today's personalized insight.";
 
     const onRefresh = async () => {
         setIsRefreshing(true);
@@ -75,7 +80,7 @@ const FeedbackScreen = () => {
                     </View>
 
                     <Text style={styles.heroSubtitle}>
-                        {insight ? insight : "Loading your personalized insight..."}
+                        {insightText}
                     </Text>
                 </View> */}
 
@@ -91,7 +96,7 @@ const FeedbackScreen = () => {
                         </View>
                     </View>
                     <Text style={styles.quoteText}>
-                        {insight ? insight : "Loading your personalized insight..."}
+                        {insightText}
                     </Text>
                 </View>
 
