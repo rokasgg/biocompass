@@ -15,6 +15,7 @@ import {
 import Svg, { Circle } from 'react-native-svg';
 import { THEME } from '../theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { HeartIcon, SleepIcon, NutritionIcon, ScaleIcon, BrainIcon, SparkleIcon } from '../../assets/icons';
 import Header from '../compoments/HeaderBar';
 import { WeeklyChart } from 'src/compoments/WeeklyChart';
@@ -27,6 +28,7 @@ const { width } = Dimensions.get('window');
 
 const FeedbackScreen = () => {
 
+    const navigation = useNavigation();
     const user = useStore(state => state.user);
     const hasCompletedMorningCheckIn = useStore((state: any) => state.hasCompletedMorningCheckIn);
     const { weeklyScores, statusMessage, detoxCard, yesterdayScreenTime, weeklyFocusMinutes, isLoading, refresh } = useWeeklyFeedback(user?.userId ?? '');
@@ -95,9 +97,19 @@ const FeedbackScreen = () => {
                             <Text style={styles.aiPillText}>AI insight</Text>
                         </View>
                     </View>
-                    <Text style={styles.quoteText}>
-                        {insightText}
-                    </Text>
+                    <View style={styles.insightRow}>
+                        <Text style={[styles.quoteText, { flex: 1 }]}>
+                            {insightText}
+                        </Text>
+                        {!hasCompletedMorningCheckIn && (
+                            <TouchableOpacity
+                                style={styles.checkInChip}
+                                onPress={() => (navigation as any).navigate('DailyCheckInEntry', { phase: 'morning' })}
+                            >
+                                <Text style={styles.checkInChipText}>Check-in →</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
                 </View>
 
 
@@ -222,7 +234,10 @@ const styles = StyleSheet.create({
     trendTag: { fontSize: 10, fontWeight: '600', color: THEME.colors.outline },
 
     quoteChip: { backgroundColor: 'rgba(125, 82, 95, 0.08)', padding: 24, borderRadius: 16, marginBottom: 32 },
-    quoteText: { fontStyle: 'italic', textAlign: 'auto', color: THEME.colors.tertiary, fontSize: 14, lineHeight: 20, }
+    quoteText: { fontStyle: 'italic', textAlign: 'auto', color: THEME.colors.tertiary, fontSize: 14, lineHeight: 20 },
+    insightRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 12, marginTop: 4 },
+    checkInChip: { backgroundColor: THEME.colors.primary, paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
+    checkInChipText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 });
 
 export default FeedbackScreen;
