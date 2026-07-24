@@ -29,12 +29,24 @@ import Face3 from '../../assets/icons/face3.svg';
 import Face4 from '../../assets/icons/face4.svg';
 import Face5 from '../../assets/icons/face5.svg';
 
+import Energy from '../../assets/icons/energy.svg';
+import Smile from '../../assets/icons/good.svg';
+import Yawn from '../../assets/icons/yawn.svg';
+import LowBattery from '../../assets/icons/low-battery.svg';
+
 import {
     EyeIcon,
 } from '../../assets/icons';
 
 
 const { width } = Dimensions.get('window');
+
+const SLEEP_OPTIONS = [
+    { emoji: <Energy width={28} height={28} />, label: 'Fully Restored', sub: 'Woke up full of energy', pts: 20 },
+    { emoji: <Smile width={28} height={28} />, label: 'Rested', sub: 'Normal, good condition', pts: 15 },
+    { emoji: <Yawn width={28} height={28} />, label: 'Slightly Tired', sub: 'Low on energy', pts: 10 },
+    { emoji: <LowBattery width={28} height={28} />, label: 'Exhausted', sub: 'Completely sleep-deprived', pts: 5 },
+];
 
 const DailyCheckInEntry = () => {
     const navigation = useNavigation();
@@ -63,7 +75,7 @@ const DailyCheckInEntry = () => {
     const [showConfirm, setShowConfirm] = useState(false);
 
     useEffect(() => {
-        requestAuthorization({ toRead: ['HKQuantityTypeIdentifierStepCount'] } as any).catch(() => {});
+        requestAuthorization({ toRead: ['HKQuantityTypeIdentifierStepCount'] } as any).catch(() => { });
     }, []);
 
     const now = new Date();
@@ -74,8 +86,10 @@ const DailyCheckInEntry = () => {
     // --- Morning Check-In State ---
     const [path, setPath] = useState('');
     const [manifestation, setManifestation] = useState('');
+    const [sleepQualityIndex, setSleepQualityIndex] = useState<number | null>(null);
 
     const invalidateProfileCache = useStore((s: any) => s.invalidateProfileCache);
+    const hasSleepData = useStore((s: any) => s.hasSleepData);
 
     const handleBackPress = () => {
         if (step > 1) setStep((s) => s - 1);
@@ -116,13 +130,16 @@ const DailyCheckInEntry = () => {
         </SafeAreaView>
     );
 
+    // Sleep step only shown for morning when HealthKit has no data
+    const showSleepStep = hasSleepData === false && currentPhase === 'morning';
+    const sleepStepOffset = showSleepStep ? 1 : 0;
+
     // Dinamiškai nustatom maksimalų žingsnių skaičių pagal fazę
-    const maxSteps = currentPhase === 'morning' ? 3 : 3;
+    const maxSteps = currentPhase === 'morning' ? 3 + sleepStepOffset : 3;
 
     // --- SUBMIT LOGIKA ---
 
     const handleSubmitCheckIn = async () => {
-        console.log('Fire123')
         setIsLoading(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -137,6 +154,7 @@ const DailyCheckInEntry = () => {
                 morning_theme: path,
                 morning_completed: true,
                 steps: todaySteps,
+                ...(showSleepStep && sleepQualityIndex !== null ? { sleep_quality: SLEEP_OPTIONS[sleepQualityIndex].pts } : {}),
             } : {
                 screen_hours: screenHours,
                 digital_fatigue: emojiIndex,
@@ -173,8 +191,9 @@ const DailyCheckInEntry = () => {
     const canProceed: boolean = (() => {
         if (step === 0) return true;
         if (currentPhase === 'morning') {
-            if (step === 1) return path !== '';
-            if (step === 2) return manifestation.trim() !== '';
+            if (showSleepStep && step === 1) return sleepQualityIndex !== null;
+            if (step === 1 + sleepStepOffset) return path !== '';
+            if (step === 2 + sleepStepOffset) return manifestation.trim() !== '';
         }
         if (currentPhase === 'evening') {
             if (step === 1) return screenHoursTouched;
@@ -211,9 +230,33 @@ const DailyCheckInEntry = () => {
                                     </View>
                                 </View>
                             )}
-                            {step === 1 && (
+                            {showSleepStep && step === 1 && (
+                                <View style={styles.card}>
+                                    <Text style={styles.overline}>STEP 01 — SLEEP</Text>
+                                    <Text style={styles.title}>How rested do you feel?</Text>
+                                    <Text style={styles.subtitle}>Apple Health has no sleep data for last night. Rate how your body feels this morning.</Text>
+                                    <View style={styles.grid}>
+                                        {SLEEP_OPTIONS.map((opt, idx) => (
+                                            <TouchableOpacity
+                                                key={idx}
+                                                style={[styles.pathCard, sleepQualityIndex === idx && { backgroundColor: THEME.colors.primary + '15', borderColor: THEME.colors.primary, borderWidth: 1 }]}
+                                                onPress={() => setSleepQualityIndex(idx)}
+                                            >
+                                                <Text style={{ fontSize: 28, marginRight: 16 }}>{opt.emoji}</Text>
+                                                <View style={styles.cardText}>
+                                                    <Text style={styles.cardTitle}>{opt.label}</Text>
+                                                    <Text style={styles.cardSub}>{opt.sub}</Text>
+                                                </View>
+                                                <Text style={{ fontSize: 12, fontWeight: '700', color: THEME.colors.primary }}>{`+${opt.pts} pts`}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+
+                            {step === 1 + sleepStepOffset && (
                                 <View style={styles.step}>
-                                    <Text style={styles.overline}>STEP 01 — FOCUS</Text>
+                                    <Text style={styles.overline}>STEP {showSleepStep ? '02' : '01'} — FOCUS</Text>
                                     <Text style={styles.title}>What is your focus today?</Text>
                                     <Text style={styles.subtitle}>Select an intention to guide your morning ritual.</Text>
 
@@ -221,7 +264,6 @@ const DailyCheckInEntry = () => {
                                         <PathCard
                                             title="Abundance"
                                             sub="Cultivate a mindset of prosperity."
-                                            // icon={PaymentsIcon}
                                             color={THEME.colors.primaryContainer}
                                             onPress={() => onSelect('Abundance')}
                                             selected={path === 'Abundance'}
@@ -229,7 +271,6 @@ const DailyCheckInEntry = () => {
                                         <PathCard
                                             title="Inner Peace"
                                             sub="Silence the noise and find stillness."
-                                            // icon={SelfImprovementIcon}
                                             color={THEME.colors.secondary}
                                             onPress={() => onSelect('Inner Peace')}
                                             selected={path === 'Inner Peace'}
@@ -237,7 +278,6 @@ const DailyCheckInEntry = () => {
                                         <PathCard
                                             title="Physical Vitality"
                                             sub="Energize your body and soul."
-                                            // icon={BoltIcon}
                                             color={THEME.colors.tertiary}
                                             onPress={() => onSelect('Physical Vitality')}
                                             selected={path === 'Physical Vitality'}
@@ -246,9 +286,9 @@ const DailyCheckInEntry = () => {
                                 </View>
                             )}
 
-                            {step === 2 && (
+                            {step === 2 + sleepStepOffset && (
                                 <View style={styles.step}>
-                                    <Text style={styles.overline}>STEP 02 — MANIFEST</Text>
+                                    <Text style={styles.overline}>STEP {showSleepStep ? '03' : '02'} — MANIFEST</Text>
                                     <Text style={styles.title}>What are you calling in today?</Text>
 
                                     <View style={styles.inputContainer}>
@@ -266,9 +306,9 @@ const DailyCheckInEntry = () => {
                                 </View>
                             )}
 
-                            {step === 3 && (
+                            {step === 3 + sleepStepOffset && (
                                 <View style={styles.card}>
-                                    <Text style={styles.overline}>STEP 3 OF 3</Text>
+                                    <Text style={styles.overline}>STEP {showSleepStep ? '4 OF 4' : '3 OF 3'}</Text>
                                     <Text style={styles.title}>Morning Habits</Text>
                                     <Text style={styles.subtitle}>Check items you have already unlocked this morning:</Text>
                                     <View style={styles.checkboxContainer}>

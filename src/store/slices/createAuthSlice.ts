@@ -49,6 +49,7 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (set) 
         profileStreak: null,
         mindfulMinutes: 0,
         profileDataFetchedAt: null,
+        hasSleepData: null,
     }),
 
     setIsInitialLoading: (value) => set({ isLoading: value }),

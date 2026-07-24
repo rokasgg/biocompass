@@ -49,6 +49,9 @@ const HomeScreen = () => {
     const completeEveningCheckIn = useStore(state => (state as any).completeEveningCheckIn);
     const storedDailyScore = useStore(state => (state as any).dailyScore);
     const storeDailyScore = useStore(state => (state as any).setDailyScore);
+    const setHasSleepData = useStore((s: any) => s.setHasSleepData);
+    const updateSleep = useStore((s: any) => s.updateSleep);
+    const hasSleepData = useStore((s: any) => s.hasSleepData);
 
     const [dailyScore, setDailyScore] = useState<number>(storedDailyScore);
     const [screenTimeMinutes, setScreenTimeMinutes] = useState<number>(0);
@@ -166,13 +169,11 @@ const HomeScreen = () => {
     const isLoadingSteps = isAuthorized && stats === null;
 
     const [sleepDisplayText, setSleepDisplayText] = useState("--");
-    const [isLoadingSleep, setIsLoadingSleep] = useState(false);
 
     useEffect(() => {
         if (!isAuthorized) return;
         const fetchSleepData = async () => {
             try {
-                setIsLoadingSleep(true);
                 const sleepSamples = await queryCategorySamples(
                     'HKCategoryTypeIdentifierSleepAnalysis',
                     { limit: 0, filter: { date: { startDate: start, endDate: end } } }
@@ -186,7 +187,14 @@ const HomeScreen = () => {
                     const hours = Math.floor(totalSleepMinutes / 60);
                     const minutes = totalSleepMinutes % 60;
 
-                    setSleepDisplayText(hours > 0 || minutes > 0 ? `${hours}h ${minutes}m` : "No data");
+                    if (hours > 0 || minutes > 0) {
+                        setSleepDisplayText(`${hours}h ${minutes}m`);
+                        setHasSleepData(true);
+                    } else {
+                        setSleepDisplayText("No data");
+                        setHasSleepData(false);
+                        updateSleep(0, 'None');
+                    }
 
                     // Generate clean local date string matching your DB format (YYYY-MM-DD)
                     const year = start.getFullYear();
@@ -197,17 +205,17 @@ const HomeScreen = () => {
                     const { data: { user } } = await supabase.auth.getUser();
                     if (user) {
                         const sleepHoursDecimal = parseFloat((totalSleepMinutes / 60).toFixed(2));
+                        if (sleepHoursDecimal > 0) updateSleep(sleepHoursDecimal, 'HealthKit');
 
-                        // 🚀 Changed .update() to .upsert() so it creates a row if today is empty!
                         const { error: dbError } = await supabase
-                            .from('daily_metrics') // 👈 Set to your exact table name
+                            .from('daily_metrics')
                             .upsert(
                                 {
                                     user_id: user.id,
                                     date: todayDateString,
                                     sleep_hours: sleepHoursDecimal
                                 },
-                                { onConflict: 'user_id,date' } // Prevents duplicating rows if it already exists
+                                { onConflict: 'user_id,date' }
                             );
 
                         if (dbError) {
@@ -218,12 +226,13 @@ const HomeScreen = () => {
                     }
                 } else {
                     setSleepDisplayText("No data");
+                    setHasSleepData(false);
+                    updateSleep(0, 'None');
                 }
             } catch (err) {
                 console.error("Failed to fetch or sync sleep data:", err);
                 setSleepDisplayText("Error");
             } finally {
-                setIsLoadingSleep(false);
             }
         };
         fetchSleepData();
@@ -287,7 +296,7 @@ const HomeScreen = () => {
                 {/* --- Bento Grid Metrics --- */}
                 <View style={styles.metricsGrid}>
                     <MetricCard vibe="steps" value={stepCount.toLocaleString()} badge={isLoadingSteps ? "Loading..." : "Syncing"} progress={Math.min(stepCount / 10000, 1)} />
-                    <MetricCard vibe="sleep" value={sleepDisplayText} badge={isLoadingSleep ? "Loading..." : "Rest Tracker"} progress={0.85} />
+                    {hasSleepData === true && <MetricCard vibe="sleep" value={sleepDisplayText} badge="Rest Tracker" progress={0.85} />}
                     {isEveningPhase && screenTimeMinutes && <MetricCard vibe="screenTime" value={(() => {
                         const m = screenTimeMinutes || 0;
                         const h = Math.floor(m / 60);

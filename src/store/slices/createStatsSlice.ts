@@ -70,6 +70,8 @@ export interface StatsSlice {
     setProfileData: (payload: { streak: number | null; sessionMinutes: number }) => void;
     invalidateProfileCache: () => void;
     addMindfulMinutes: (minutes: number) => void;
+    hasSleepData: boolean | null;
+    setHasSleepData: (val: boolean) => void;
 }
 
 export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set) => ({
@@ -78,6 +80,7 @@ export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set
     dailyScore: 0,
     screenTime: 0,
     sleep: { hours: 0, quality: 'Average' },
+    hasSleepData: null,
     activity: { steps: 0, calories: 0, updatedAt: Date.now() },
     manifestationCount: 0,
 
@@ -156,6 +159,8 @@ export const createStatsSlice: StateCreator<AppState, [], [], StatsSlice> = (set
     addMindfulMinutes: (minutes) => set((state: any) => ({
         mindfulMinutes: (state.mindfulMinutes ?? 0) + minutes,
     })),
+
+    setHasSleepData: (val) => set({ hasSleepData: val }),
 
     setWeeklyFeedback: (payload) => set({
         weeklyScores: payload.weeklyScores,
