@@ -41,6 +41,30 @@ const PrivacyScreen = () => {
 
     const [researchData, setResearchData] = useState(user?.shareResearch ?? false);
     const [leaderboard, setLeaderboard] = useState(user?.leaderboardEnabled ?? true);
+    const logout = useStore(s => s.logout);
+
+    const handleDeleteAccount = () => {
+        Alert.alert(
+            'Delete Account',
+            'This will permanently delete your account and all your data. This cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        const { error } = await supabase.rpc('delete_user');
+                        if (error) {
+                            Alert.alert('Error', 'Could not delete account. Please try again.');
+                            return;
+                        }
+                        await supabase.auth.signOut();
+                        logout();
+                    },
+                },
+            ]
+        );
+    };
 
     // Patikrinam realią situaciją telefone atidarant ekraną
     useEffect(() => {
@@ -204,7 +228,7 @@ const PrivacyScreen = () => {
                         onPress={onChangePassword}
                     />
 
-                    <TouchableOpacity style={styles.deleteButton}>
+                    <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
                         <TrashIcon width={16} height={16} fill={THEME.colors.error} />
                         <Text style={styles.deleteText}>Delete My Account</Text>
                     </TouchableOpacity>

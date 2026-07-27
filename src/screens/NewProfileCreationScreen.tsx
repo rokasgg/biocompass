@@ -33,9 +33,6 @@ const NewProfileCreationScreen = () => {
 
 
     const [birthDate, setBirthDate] = useState<Date>(new Date());
-    const [phone, setPhone] = useState('');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
 
     const { control, handleSubmit, formState: { errors } } = useForm<ProfileFormData>({
         resolver: zodResolver(profileSchema),
@@ -58,7 +55,7 @@ const NewProfileCreationScreen = () => {
                 first_name: firstName,
                 last_name: lastName,
                 email: user.email || '',
-                subscribed: true,
+                subscribed: false,
                 phone: phone,
                 updated_at: new Date(),
                 birth_date: birthDate.toISOString(), // Pataisytas lauko pavadinimas į birth_date
@@ -81,13 +78,7 @@ const NewProfileCreationScreen = () => {
         }
     };
 
-    // Funkcija, kurią iškviečiame, kai atidaromas DatePicker
-    const handleDatePickerPress = () => {
-        // Skiriame šiek tiek laiko komponentui išsiplėsti, tada scroll'inam į apačią
-        setTimeout(() => {
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-    };
+
 
     return (
         <SafeAreaView style={styles.container}>
@@ -150,9 +141,8 @@ const NewProfileCreationScreen = () => {
                                         // Jei value yra stringas (iš DB ar pan.), paverčiam į Date objektą
                                         value={value ? new Date(value) : new Date()}
                                         onChange={(selectedDate) => {
-                                            // ČIA SVARBIAUSIA DALIS: 
-                                            // Kai pasirenki datą, turi pranešti React Hook Form
                                             onChange(selectedDate);
+                                            setBirthDate(selectedDate);
                                         }}
                                         error={errors.birthDate?.message}
                                     />

@@ -117,7 +117,9 @@ const SettingsScreen = () => {
                         <Image source={avatarSource} style={styles.mainAvatar} />
                     </View>
                     <Text style={styles.userName}>{user?.firstName} {user?.lastName}</Text>
-                    <Text style={styles.membershipStatus}>Premium Wellness Member</Text>
+                    <Text style={[styles.membershipStatus, user?.subscribed && styles.membershipStatusPremium]}>
+                        {user?.subscribed ? '✦ Premium Member' : 'Free Member'}
+                    </Text>
                 </View>
 
                 {/* --- Health Goals Bento Grid --- */}
@@ -341,6 +343,10 @@ const styles = StyleSheet.create({
         fontSize: THEME.fontSize.md,
         color: THEME.colors.onSurfaceVariant,
         fontWeight: '500'
+    },
+    membershipStatusPremium: {
+        color: THEME.colors.primary,
+        fontWeight: '700',
     },
 
     // --- Settings List ---

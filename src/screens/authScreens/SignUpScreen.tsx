@@ -18,27 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { SignUpFormData, signUpSchema } from '../../utils/validators';
 
 
-type PasswordStrength = 'Weak' | 'Medium' | 'Strong';
-const getPasswordStrength = (password: string): PasswordStrength => {
-    if (password.length >= 12 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) {
-        return 'Strong';
-    }
-    if (password.length >= 8 && (/[A-Z]/.test(password) || /[0-9]/.test(password))) {
-        return 'Medium';
-    }
-    return 'Weak';
-};
 
-const getStrengthColor = (strength: PasswordStrength) => {
-    switch (strength) {
-        case 'Strong':
-            return THEME.colors.primary;
-        case 'Medium':
-            return '#FFB000';
-        default:
-            return '#D00000';
-    }
-};
 
 const SignUpScreen = () => {
 
