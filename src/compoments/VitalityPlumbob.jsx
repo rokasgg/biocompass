@@ -69,20 +69,21 @@ function applyLight([r, g, b], f) {
 
 // ── Component ────────────────────────────────────────────────
 const VitalityPlumbob = ({ score = 0, isLoading = false }) => {
-    const [angle, setAngle]       = useState(0);
-    const [isDecided, setIsDecided] = useState(false);
+    const [angle, setAngle]   = useState(0);
+    const [colorT, setColorT] = useState(0); // 0 = grey, 1 = target color
     const angleRef   = useRef(0);
     const rafRef     = useRef(null);
+    const colorRafRef = useRef(null);
 
     useEffect(() => {
         cancelAnimationFrame(rafRef.current);
+        cancelAnimationFrame(colorRafRef.current);
 
         if (isLoading) {
-            setIsDecided(false);
+            setColorT(0);
             let last = null;
             const loop = (ts) => {
                 if (last !== null) {
-                    // 4.5 s per full rotation
                     angleRef.current += ((ts - last) / 4500) * Math.PI * 2;
                 }
                 last = ts;
@@ -91,7 +92,7 @@ const VitalityPlumbob = ({ score = 0, isLoading = false }) => {
             };
             rafRef.current = requestAnimationFrame(loop);
         } else {
-            // Settle: coast to the nearest clean stop over 5 s
+            // Settle spin over 5 s
             const startAngle = angleRef.current;
             const fullTurns  = Math.ceil(startAngle / (Math.PI * 2));
             const target     = fullTurns * Math.PI * 2;
@@ -106,24 +107,40 @@ const VitalityPlumbob = ({ score = 0, isLoading = false }) => {
                 if (t < 1) {
                     rafRef.current = requestAnimationFrame(settle);
                 } else {
-                    setIsDecided(true);
+                    // Fade colour in over 1.2 s after spin settles
+                    const colorStart = performance.now();
+                    const fadeColor = (cts) => {
+                        const ct = Math.min((cts - colorStart) / 1200, 1);
+                        setColorT(ct);
+                        if (ct < 1) colorRafRef.current = requestAnimationFrame(fadeColor);
+                    };
+                    colorRafRef.current = requestAnimationFrame(fadeColor);
                 }
             };
             rafRef.current = requestAnimationFrame(settle);
         }
 
-        return () => cancelAnimationFrame(rafRef.current);
+        return () => {
+            cancelAnimationFrame(rafRef.current);
+            cancelAnimationFrame(colorRafRef.current);
+        };
     }, [isLoading]);
 
-    const getColor = () => {
-        if (isLoading || !isDecided) return THEME.colors.outlineVariant;
+    const getTargetColor = () => {
         if (score >= 70) return THEME.colors.primary;
         if (score >= 40) return '#EAB308';
         return THEME.colors.error;
     };
 
-    const baseColor = getColor();
-    const rgb       = hexToRgb(baseColor);
+    const greyRgb  = hexToRgb(THEME.colors.outlineVariant);
+    const targetRgb = hexToRgb(getTargetColor());
+    // Lerp grey → target based on colorT (0 while loading/spinning, 0→1 on fade-in)
+    const mix = (a, b, t) => Math.round(a + (b - a) * t);
+    const rgb = [
+        mix(greyRgb[0], targetRgb[0], colorT),
+        mix(greyRgb[1], targetRgb[1], colorT),
+        mix(greyRgb[2], targetRgb[2], colorT),
+    ];
 
     // Build projected + sorted faces
     const rotated = {};
