@@ -24,6 +24,7 @@ import { mapProfileFromDB } from "../utils/mapper";
 import ManifestationSelectionScreen from "../screens/ManifestationSelectionScreen";
 import SplashScreen from "../screens/SplashScreen";
 import FocusTimerScreen from "../screens/FocusTimerScreen";
+import SubscriptionScreen from "../screens/SubscriptionScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -212,11 +213,16 @@ export default function AppNavigator() {
                             component={FocusTimerScreen}
                             options={{
                                 animation: 'slide_from_right',
-                                gestureEnabled: false, // Disable swipe back gesture
+                                gestureEnabled: false,
                             }}
                         />
-
-
+                        <Stack.Screen
+                            name="Subscription"
+                            component={SubscriptionScreen}
+                            options={{
+                                animation: 'slide_from_bottom',
+                            }}
+                        />
 
                     </Stack.Group>
                     :

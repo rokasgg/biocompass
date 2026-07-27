@@ -31,6 +31,7 @@ const FeedbackScreen = () => {
     const navigation = useNavigation();
     const user = useStore(state => state.user);
     const hasCompletedMorningCheckIn = useStore((state: any) => state.hasCompletedMorningCheckIn);
+    const isSubscribed = user?.subscribed ?? false;
     const { weeklyScores, statusMessage, detoxCard, yesterdayScreenTime, weeklyFocusMinutes, isLoading, refresh } = useWeeklyFeedback(user?.userId ?? '');
     const [isRefreshing, setIsRefreshing] = React.useState(false);
 
@@ -86,40 +87,48 @@ const FeedbackScreen = () => {
                     </Text>
                 </View> */}
 
-                <View style={styles.quoteChip}>
-                    <View style={styles.header}>
-                        <View style={styles.titleRow}>
-                            <SparkleIcon width={20} height={20} fill={THEME.colors.primary} />
-                            <Text style={styles.title}>Weekly resonance</Text>
+                {isSubscribed ? (
+                    <View style={styles.quoteChip}>
+                        <View style={styles.header}>
+                            <View style={styles.titleRow}>
+                                <SparkleIcon width={20} height={20} fill={THEME.colors.primary} />
+                                <Text style={styles.title}>Weekly resonance</Text>
+                            </View>
+                            <View style={styles.aiPill}>
+                                <SparkleIcon width={11} height={11} fill={THEME.colors.primary} />
+                                <Text style={styles.aiPillText}>AI insight</Text>
+                            </View>
                         </View>
-                        <View style={styles.aiPill}>
-                            <SparkleIcon width={11} height={11} fill={THEME.colors.primary} />
-                            <Text style={styles.aiPillText}>AI insight</Text>
+                        <View style={styles.insightRow}>
+                            <Text style={[styles.quoteText, { flex: 1 }]}>
+                                {insightText}
+                            </Text>
+                            {!hasCompletedMorningCheckIn && (
+                                <TouchableOpacity
+                                    style={styles.checkInChip}
+                                    onPress={() => (navigation as any).navigate('DailyCheckInEntry', { phase: 'morning' })}
+                                >
+                                    <Text style={styles.checkInChipText}>Check-in →</Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
                     </View>
-                    <View style={styles.insightRow}>
-                        <Text style={[styles.quoteText, { flex: 1 }]}>
-                            {insightText}
-                        </Text>
-                        {!hasCompletedMorningCheckIn && (
-                            <TouchableOpacity
-                                style={styles.checkInChip}
-                                onPress={() => (navigation as any).navigate('DailyCheckInEntry', { phase: 'morning' })}
-                            >
-                                <Text style={styles.checkInChipText}>Check-in →</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                </View>
-
-
-
-
-
-
-
-
-
+                ) : (
+                    <TouchableOpacity
+                        style={styles.premiumBanner}
+                        onPress={() => (navigation as any).navigate('Subscription')}
+                        activeOpacity={0.85}
+                    >
+                        <View style={styles.premiumBannerLeft}>
+                            <SparkleIcon width={22} height={22} fill={THEME.colors.white} />
+                            <View style={styles.premiumBannerText}>
+                                <Text style={styles.premiumBannerTitle}>Unlock AI Insights</Text>
+                                <Text style={styles.premiumBannerSub}>Personalized weekly resonance with Premium</Text>
+                            </View>
+                        </View>
+                        <Text style={styles.premiumBannerArrow}>→</Text>
+                    </TouchableOpacity>
+                )}
 
                 {/* --- Bento Grid --- */}
                 <View style={styles.bentoGrid}>
@@ -238,6 +247,21 @@ const styles = StyleSheet.create({
     insightRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 12, marginTop: 4 },
     checkInChip: { backgroundColor: THEME.colors.primary, paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
     checkInChipText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+
+    premiumBanner: {
+        backgroundColor: THEME.colors.primary,
+        borderRadius: 16,
+        padding: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 32,
+    },
+    premiumBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+    premiumBannerText: { flex: 1, gap: 3 },
+    premiumBannerTitle: { fontSize: 15, fontWeight: '700', color: '#fff' },
+    premiumBannerSub: { fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 17 },
+    premiumBannerArrow: { fontSize: 20, color: '#fff', fontWeight: '300' },
 });
 
 export default FeedbackScreen;

@@ -29,7 +29,7 @@ import MailIcon from './email.svg';
 import SendIcon from './send.svg';
 import BackIcon from './backIcon.svg';
 import EmailIcon from './email.svg';
-import SparkleIcon from './sparkle.svg';
+import SparkleIcon from './Sparkle';
 import NotimeIcon from './notime.svg';
 import FlowerIcon from './flower.svg';
 import LeafFilledIcon from './LEAFS.svg';
