@@ -11,6 +11,7 @@ export interface UserSlice {
     syncFromDB: (dbData: any) => void,
     healthSyncEnabled: boolean,
     setHealthSyncEnabled: (enabled: boolean) => void,
+    setSubscribed: (value: boolean) => void,
 }
 
 export const createUserSlice: StateCreator<AppState, [], [], UserSlice> = (set) => ({
@@ -41,4 +42,8 @@ export const createUserSlice: StateCreator<AppState, [], [], UserSlice> = (set) 
         userCompletedReg: !!dbData.profile?.firstName,
     })),
     setHealthSyncEnabled: (enabled: boolean) => set({ healthSyncEnabled: enabled }),
+
+    setSubscribed: (value) => set((state) => ({
+        user: state.user ? { ...state.user, subscribed: value } : state.user,
+    })),
 })

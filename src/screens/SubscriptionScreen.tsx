@@ -7,11 +7,15 @@ import {
     TouchableOpacity,
     StatusBar,
     Dimensions,
+    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { THEME } from '../theme';
 import { AnalyticsIcon, LeafFilledIcon, SparkleIcon } from '../../assets/icons';
+import { supabase } from '@backend/supabase';
+import { useStore } from '../store/useStore';
 
 const { width } = Dimensions.get('window');
 
@@ -58,10 +62,26 @@ const PLANS = [
 const SubscriptionScreen = () => {
     const navigation = useNavigation();
     const [selectedPlan, setSelectedPlan] = useState<'yearly' | 'monthly'>('yearly');
+    const [isLoading, setIsLoading] = useState(false);
+    const user = useStore((s: any) => s.user);
+    const setSubscribed = useStore((s: any) => s.setSubscribed);
 
-    const handleGoPremium = () => {
-        console.log('Go Premium tapped, plan:', selectedPlan);
-        // IAP handler goes here
+    const handleGoPremium = async () => {
+        if (!user?.userId) return;
+        setIsLoading(true);
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ subscribed: true })
+                .eq('id', user.userId);
+            if (error) throw error;
+            setSubscribed(true);
+            navigation.goBack();
+        } catch (e) {
+            Alert.alert('Something went wrong', 'Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -158,8 +178,11 @@ const SubscriptionScreen = () => {
                 })}
 
                 {/* CTA */}
-                <TouchableOpacity style={styles.ctaButton} onPress={handleGoPremium} activeOpacity={0.85}>
-                    <Text style={styles.ctaText}>Go Premium</Text>
+                <TouchableOpacity style={styles.ctaButton} onPress={handleGoPremium} activeOpacity={0.85} disabled={isLoading}>
+                    {isLoading
+                        ? <ActivityIndicator color={THEME.colors.white} />
+                        : <Text style={styles.ctaText}>Go Premium</Text>
+                    }
                 </TouchableOpacity>
 
                 {/* Maybe Later */}
