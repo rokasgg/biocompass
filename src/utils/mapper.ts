@@ -13,6 +13,9 @@ export const mapProfileFromDB = (dbProfile: any) => {
     birthDate: dbProfile.birth_date || null,
     shareResearch: dbProfile.share_research ?? false,
     leaderboardEnabled: dbProfile.leaderboard_enabled ?? true,
+    dailyRemindersEnabled: dbProfile.daily_reminders_enabled ?? true,
+    weeklyReportsEnabled: dbProfile.weekly_reports_enabled ?? true,
+    systemAlertsEnabled: dbProfile.system_alerts_enabled ?? true,
   };
 };
 

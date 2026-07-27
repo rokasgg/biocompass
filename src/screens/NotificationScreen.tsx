@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, Alert, } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, StyleSheet, Alert, Platform } from 'react-native';
 import { THEME } from '../theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SunIcon, AnalyticsIcon, SettingsIcon } from '../../assets/icons';
@@ -7,7 +7,6 @@ import * as Notifications from 'expo-notifications';
 import { useStore } from '../store/useStore';
 import { supabase } from '../../backend/supabase';
 
-// Sukonfigūruojam, kaip appsas elgiasi, kai notifikacija ateina jam esant atidarytam
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
         shouldShowAlert: true,
@@ -15,6 +14,40 @@ Notifications.setNotificationHandler({
         shouldSetBadge: false,
     }),
 });
+
+const WEEKLY_NOTIF_ID = 'weekly-report';
+
+async function requestPermission(): Promise<boolean> {
+    const { status: existing } = await Notifications.getPermissionsAsync();
+    if (existing === 'granted') return true;
+    const { status } = await Notifications.requestPermissionsAsync();
+    return status === 'granted';
+}
+
+async function scheduleDailyReminder() {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    await Notifications.scheduleNotificationAsync({
+        identifier: 'daily-reminder',
+        content: {
+            title: 'Good morning 🌿',
+            body: 'Your morning check-in is ready. Start your day with intention.',
+            sound: true,
+        },
+        trigger: { hour: 8, minute: 0, repeats: true } as any,
+    });
+}
+
+async function scheduleWeeklyReport() {
+    await Notifications.scheduleNotificationAsync({
+        identifier: WEEKLY_NOTIF_ID,
+        content: {
+            title: 'Your weekly wellness summary 📊',
+            body: 'See how your habits shaped your week. Tap to explore.',
+            sound: true,
+        },
+        trigger: { weekday: 2, hour: 9, minute: 0, repeats: true } as any,
+    });
+}
 
 const NotificationSettingsScreen = ({ navigation }: any) => {
     // 📦 Zustand Store pajungimas (pataisyk kintamuosius pagal savo Store struktūrą)
@@ -26,7 +59,6 @@ const NotificationSettingsScreen = ({ navigation }: any) => {
     const [reports, setReports] = useState(user?.weeklyReportsEnabled ?? true);
     const [system, setSystem] = useState(user?.systemAlertsEnabled ?? true);
 
-    // Sinchronizuojam vietinį useState, jei user objektas store užsikrauna vėliau
     useEffect(() => {
         if (user) {
             setReminders(user.dailyRemindersEnabled ?? true);
@@ -35,101 +67,67 @@ const NotificationSettingsScreen = ({ navigation }: any) => {
         }
     }, [user]);
 
-    // 🔔 1. HANDLERIS: Daily Reminders (Su Expo Push Token generavimu)
+    useEffect(() => {
+        if (Platform.OS === 'android') {
+            Notifications.setNotificationChannelAsync('default', {
+                name: 'Default',
+                importance: Notifications.AndroidImportance.HIGH,
+                sound: 'default',
+            });
+        }
+    }, []);
+
     const handleDailyRemindersToggle = async (value: boolean) => {
-        // 1. Iškart pakeičiam vietinę būseną ir Zustand, kad UI reaguotų žaibiškai
         setReminders(value);
         setUser({ ...user, dailyRemindersEnabled: value });
 
-        // 2. Atnaujinam pagrindinį nustatymą Supabase duomenų bazėje
-        const { error: dbError } = await supabase
-            .from('profiles')
-            .update({ daily_reminders_enabled: value })
-            .eq('id', user?.userId);
-
-        if (dbError) console.error('Error updating daily reminders in DB:', dbError.message);
-
-        // 3. Jei vartotojas įjungia pranešimus, sutvarkom teises ir žetonus
-        if (value && user?.userId) {
-            try {
-                // Patikrinam, ar telefonas išvis leidžia siųsti notifikacijas
-                const { status: existingStatus } = await Notifications.getPermissionsAsync();
-                let finalStatus = existingStatus;
-
-                if (existingStatus !== 'granted') {
-                    const { status } = await Notifications.requestPermissionsAsync();
-                    finalStatus = status;
-                }
-
-                // Jei vartotojas griežtai pasakė NE sisteminiame lange
-                if (finalStatus !== 'granted') {
-                    Alert.alert(
-                        'Permissions Required',
-                        'Please enable notifications in your phone settings to receive daily wellness nudges.'
-                    );
-                    setReminders(false);
-                    setUser({ ...user, dailyRemindersEnabled: false });
-                    return;
-                }
-
-                // 🚀 SAUGIKLIS NUO KLAIDOS (Expo Go / Simulator apėjimas)
-                let token = `sandbox-token-${user.userId.slice(0, 8)}`; // default testinis žetonas
-
-                try {
-                    // Bandome paimti tikrąjį žetoną iš Apple/Google per Expo
-                    const tokenData = await Notifications.getExpoPushTokenAsync();
-                    token = tokenData.data;
-                    console.log('✅ Successfully fetched native Push Token:', token);
-                } catch (tokenError) {
-                    // Šitas blokas sugauna tavo turėtą "aps-environment" klaidą ir leidžia appe testuoti toliau!
-                    console.log('⚠️ Running via Expo Go or Simulator. Generated sandbox token for testing.');
-                }
-
-                // 4. Įrašome žetoną (tikrą arba testinį) į Supabase profilio lentelę
-                const { error: tokenUpdateError } = await supabase
-                    .from('profiles')
-                    .update({ expo_push_token: token })
-                    .eq('id', user.userId);
-
-                if (tokenUpdateError) {
-                    console.error('Error saving push token to Supabase:', tokenUpdateError.message);
-                } else {
-                    // Atnaujinam Zustand, kad appsas atmintyje turėtų šį kodą
-                    setUser({ ...user, dailyRemindersEnabled: true, expoPushToken: token });
-                }
-
-            } catch (err) {
-                console.error('Unexpected notification configuration error:', err);
+        if (value) {
+            const granted = await requestPermission();
+            if (!granted) {
+                Alert.alert('Permissions Required', 'Please enable notifications in your phone settings to receive daily wellness nudges.');
                 setReminders(false);
                 setUser({ ...user, dailyRemindersEnabled: false });
+                return;
             }
+            await scheduleDailyReminder();
+
+            // Store push token for future server-side use
+            try {
+                const { data: tokenData } = await Notifications.getExpoPushTokenAsync();
+                await supabase.from('profiles').update({ expo_push_token: tokenData, daily_reminders_enabled: true }).eq('id', user?.userId);
+                setUser({ ...user, dailyRemindersEnabled: true, expoPushToken: tokenData });
+            } catch {
+                await supabase.from('profiles').update({ daily_reminders_enabled: true }).eq('id', user?.userId);
+            }
+        } else {
+            await Notifications.cancelScheduledNotificationAsync('daily-reminder').catch(() => {});
+            await supabase.from('profiles').update({ daily_reminders_enabled: false }).eq('id', user?.userId);
         }
     };
 
-    // 📊 2. HANDLERIS: Weekly Reports
     const handleWeeklyReportsToggle = async (value: boolean) => {
         setReports(value);
         setUser({ ...user, weeklyReportsEnabled: value });
 
-        const { error } = await supabase
-            .from('profiles')
-            .update({ weekly_reports_enabled: value })
-            .eq('id', user?.userId);
+        if (value) {
+            const granted = await requestPermission();
+            if (!granted) {
+                setReports(false);
+                setUser({ ...user, weeklyReportsEnabled: false });
+                return;
+            }
+            await scheduleWeeklyReport();
+        } else {
+            await Notifications.cancelScheduledNotificationAsync(WEEKLY_NOTIF_ID).catch(() => {});
+        }
 
-        if (error) console.error('Error updating weekly reports:', error.message);
+        await supabase.from('profiles').update({ weekly_reports_enabled: value }).eq('id', user?.userId);
     };
 
-    // ⚙️ 3. HANDLERIS: System Alerts
     const handleSystemAlertsToggle = async (value: boolean) => {
         setSystem(value);
         setUser({ ...user, systemAlertsEnabled: value });
-
-        const { error } = await supabase
-            .from('profiles')
-            .update({ system_alerts_enabled: value })
-            .eq('id', user?.userId);
-
-        if (error) console.error('Error updating system alerts:', error.message);
+        await supabase.from('profiles').update({ system_alerts_enabled: value }).eq('id', user?.userId);
     };
 
     return (
